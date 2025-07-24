@@ -15,4 +15,9 @@ public interface IUserInfoMapper {
     // 회원 가입 전 이메일 중복확인(DB조회하기)
     UserInfoDTO getEmailExists(UserInfoDTO pDTO) throws Exception;
 
+    UserInfoDTO getLogin(UserInfoDTO pDTO) throws Exception;
+
+    UserInfoDTO getUserId(UserInfoDTO pDTO) throws Exception;
+
+    int updatePassword(UserInfoDTO pDTO) throws Exception;
 }
