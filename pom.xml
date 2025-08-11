@@ -32,7 +32,7 @@
     </properties>
     <dependencies>
 
-        <!-- JSTL (JSP에서 <c:forEach> 같은 태그 사용 가능하게 함) --> (  )
+        <!-- JSTL (JSP에서 <c:forEach> 같은 태그 사용 가능하게 함) -->
         <dependency>
             <groupId>jakarta.servlet.jsp.jstl</groupId>
             <artifactId>jakarta.servlet.jsp.jstl-api</artifactId>

@@ -5,21 +5,26 @@
   <meta charset="UTF-8" />
   <title>Dangerous Map Page</title>
   <meta name="viewport" content="width=device-width, initial-scale=1" />
+<%--  <link rel="stylesheet" type="text/css" href="/css/style.css" />--%>
+  <script src="/js/dangerousMap.js"></script>
 
   <!-- Tailwind CSS 포함 (로컬로 설정 권장) -->
   <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    #bodyContent p {
+      color: black;
+    }
+    #firstHeading {
+      color: black;
+      font-size: 50px;
+      font-weight: bolder;
+    }
 
-  <script>
-    // 이 위치에 작성
-    window.initMap = function() {
-      const map = new google.maps.Map(document.getElementById("map"), {
-        center: { lat: 37.5665, lng: 126.9780 },
-        zoom: 14,
-      });
+  <%--  div img {--%>
+  <%--    display: none;--%>
+  <%--  }--%>
+  </style>
 
-      // 마커, 경로 추가
-    };
-  </script>
 
 
   <!-- Google Maps API -->
@@ -28,7 +33,7 @@
           src="https://maps.googleapis.com/maps/api/js?key=AIzaSyDFRdAXJPQKDQYz8KhumTBqDRPDWEa-tjs&callback=initMap"></script>
 
   <!-- 필요 시 Lucide 아이콘 SVG 직접 포함 또는 아이콘 라이브러리 대체 -->
-  <link rel="stylesheet" href="https://unpkg.com/lucide-static/icons.css" />
+<%--  <link rel="stylesheet" href="https://unpkg.com/lucide-static/icons.css" />--%>
 </head>
 <body class="bg-black text-white">
 <div id="map-container" class="absolute inset-0 top-11 text-white">
@@ -110,6 +115,5 @@
 </button>
 
 <!-- JavaScript 파일 연결 -->
-<script src="/js/dangerousMap.js"></script>
 </body>
 </html>

@@ -43,7 +43,7 @@ public class RankingService implements IRankingService {
     }
 
     @Override
-    @Scheduled(cron = "0 0 0 * * MON", zone = "Asia/Seoul") // 매주 월요일 00:00
+    @Scheduled(cron = "0 0 0 * * MON") // 매주 월요일 00:00
     public void resetWeekly() {
         rankingMapper.resetWeekly();
     }

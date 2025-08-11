@@ -1,10 +1,11 @@
 package kopo.poly.service.impl;
 
 import kopo.poly.service.IDangerousZoneService;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
 import org.springframework.web.util.UriComponentsBuilder;
-
+@Slf4j
 @Service
 public class DangerousZoneService implements IDangerousZoneService {
     @Override
@@ -15,10 +16,12 @@ public class DangerousZoneService implements IDangerousZoneService {
                 .queryParam("ServiceKey", serviceKey)
                 .queryParam("searchYearCd", "2021")
                 .queryParam("siDo", "11")
-                .queryParam("guGun", "680")
+                .queryParam("guGun", "500")
+                .queryParam("type", "json")
                 .queryParam("numOfRows", "10")
                 .queryParam("pageNo", "1")
                 .build().toUriString();
+        log.info(url);
 
         return new RestTemplate().getForObject(url, String.class);
     }

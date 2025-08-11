@@ -157,7 +157,7 @@
 				content.style.color = "#00ff99"
 			});
 
-			document.querySelector(".hero").addEventListener("mouseenter", () => {
+			document.querySelector(".hero h1").addEventListener("mouseenter", () => {
 				blurBg.style.backgroundImage = `url('/images/화면 캡처 2025-07-10 205810.png.png')`
 				content.style.color = "#FFFFFF"
 			});

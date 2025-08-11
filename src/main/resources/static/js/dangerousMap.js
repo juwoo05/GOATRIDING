@@ -1,19 +1,20 @@
 // dangerousMap.js
 
-const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.9780 };
+const SEOUL_CITY_HALL = { lat: 37.567948201449, lng: 126.816864614312 };
 
 let map;
 let currentLocationMarker;
 let dangerousAreaMarkers = [];
 let watchId;
 let isTracking = false;
+let lastHoveredPolygon = null;
 
 function initMap() {
     map = new google.maps.Map(document.getElementById("map"), {
 
         center: SEOUL_CITY_HALL,
         zoom: 15,
-        mapTypeId: google.maps.MapTypeId.ROADMAP,
+        mapTypeId: 'terrain',
         zoomControl: true,
         mapTypeControl: false,
         scaleControl: true,
@@ -27,15 +28,164 @@ function initMap() {
             { featureType: "water", elementType: "geometry", stylers: [{ color: "#1e3a5f" }] },
         ],
     });
-
     // Add click event for testing
     map.addListener("click", (event) => {
         console.log("Map clicked at:", event.latLng.lat(), event.latLng.lng());
     });
 
+    // Define the LatLng coordinates for the polygon's path.
+    var circleCoords = [
+        { lat: 37.5679482, lng: 126.81866124 },
+        { lat: 37.56767038, lng: 126.81862672 },
+        { lat: 37.56740323, lng: 126.81852448 },
+        { lat: 37.56715703, lng: 126.81835846 },
+        { lat: 37.56694123, lng: 126.81813502 },
+        { lat: 37.56676413, lng: 126.81786277 },
+        { lat: 37.56663253, lng: 126.81755216 },
+        { lat: 37.56655149, lng: 126.81721512 },
+        { lat: 37.56652412, lng: 126.81686461 },
+        { lat: 37.56655149, lng: 126.81651411 },
+        { lat: 37.56663253, lng: 126.81617707 },
+        { lat: 37.56676413, lng: 126.81586646 },
+        { lat: 37.56694123, lng: 126.8155942 },
+        { lat: 37.56715703, lng: 126.81537077 },
+        { lat: 37.56740323, lng: 126.81520474 },
+        { lat: 37.56767038, lng: 126.81510251 },
+        { lat: 37.5679482, lng: 126.81506798 },
+        { lat: 37.56822602, lng: 126.81510251 },
+        { lat: 37.56849317, lng: 126.81520474 },
+        { lat: 37.56873937, lng: 126.81537077 },
+        { lat: 37.56895516, lng: 126.8155942 },
+        { lat: 37.56913226, lng: 126.81586646 },
+        { lat: 37.56926385, lng: 126.81617707 },
+        { lat: 37.56934489, lng: 126.81651411 },
+        { lat: 37.56937225, lng: 126.81686461 },
+        { lat: 37.56934489, lng: 126.81721512 },
+        { lat: 37.56926385, lng: 126.81755216 },
+        { lat: 37.56913226, lng: 126.81786277 },
+        { lat: 37.56895516, lng: 126.81813502 },
+        { lat: 37.56873937, lng: 126.81835846 },
+        { lat: 37.56849317, lng: 126.81852448 },
+        { lat: 37.56822602, lng: 126.81862672 },
+        { lat: 37.5679482, lng: 126.81866124 }
+    ];
+
+    // Construct the polygon.
+    var dangerousCircle = new google.maps.Polygon({
+        paths: circleCoords,
+        strokeColor: '#FF0000',
+        strokeOpacity: 0.8,
+        strokeWeight: 2,
+        fillColor: '#FF0000',
+        fillOpacity: 0.35,
+    });
+    dangerousCircle.setMap(map);
+
+    // 사용자 정의 ID 부여
+    dangerousCircle.customId = "juwoo";
+
+    // 클릭 이벤트에 적용
+    dangerousCircle.addListener("click", function (e) {
+        lastClickedFeatureIds = [this.customId]  // this는 클릭된 polygon
+        styleClicked(this); // 폴리곤에 직접 스타일 적용하는 함수
+        infowindow.open(map);
+    });
+
+    // 마우스가 폴리곤 위에 있을 때
+    dangerousCircle.addListener("mousemove", function (e) {
+        if (lastHoveredPolygon !== this) {
+            // 이전 폴리곤 초기화
+            if (lastHoveredPolygon) {
+                styleDefault(lastHoveredPolygon);
+            }
+            // 현재 폴리곤 스타일 적용
+            lastHoveredPolygon = this;
+            styleMouseMove(this);
+        }
+    });
+
+    // 마우스가 폴리곤 밖으로 나갔을 때
+    map.addListener("mousemove", function (e) {
+        if (lastHoveredPolygon) {
+            // 마우스가 어떤 폴리곤에도 안 올라간 상태로 감지되었을 때 초기화
+            styleDefault(lastHoveredPolygon);
+            lastHoveredPolygon = null;
+        }
+    });
+
+    const contentString =
+        '<div id="content">' +
+        '<div id="siteNotice">' +
+        "</div>" +
+        '<h1 id="firstHeading" class="firstHeading">사건건수:8</h1>' +
+        '<div id="bodyContent">' +
+        "<p>사장자: 5 " +
+        "사망자: 0 " +
+        "중상자: 3 " +
+        "</p>" +
+        "</div>" +
+        "</div>";
+
+    // const contentString =
+    //     '<div id="content">' +
+    //     '<div id="siteNotice">' +
+    //     "</div>" +
+    //     '<h1 id="firstHeading" class="firstHeading">Uluru</h1>' +
+    //     '<div id="bodyContent">' +
+    //     "<p><b>Uluru</b>, also referred to as <b>Ayers Rock</b>, is a large " +
+    //     "sandstone rock formation in the southern part of the " +
+    //     "Northern Territory, central Australia. It lies 335&#160;km (208&#160;mi) " +
+    //     "south west of the nearest large town, Alice Springs; 450&#160;km " +
+    //     "(280&#160;mi) by road. Kata Tjuta and Uluru are the two major " +
+    //     "features of the Uluru - Kata Tjuta National Park. Uluru is " +
+    //     "sacred to the Pitjantjatjara and Yankunytjatjara, the " +
+    //     "Aboriginal people of the area. It has many springs, waterholes, " +
+    //     "rock caves and ancient paintings. Uluru is listed as a World " +
+    //     "Heritage Site.</p>" +
+    //     '<p>Attribution: Uluru, <a href="https://en.wikipedia.org/w/index.php?title=Uluru&oldid=297882194">' +
+    //     "https://en.wikipedia.org/w/index.php?title=Uluru</a> " +
+    //     "(last visited June 22, 2009).</p>" +
+    //     "</div>" +
+    //     "</div>";
+
+    const infowindow = new google.maps.InfoWindow({
+        content: contentString,
+        position : { lat: 37.567948201449, lng: 126.816864614312 }
+    });
+
+
     getCurrentLocation();
     updateDangerousAreaMarkers();
 }
+
+function styleClicked(polygon) {
+    polygon.setOptions({
+        strokeColor: "blue",
+        fillColor: "blue",
+        fillOpacity: 0.5,
+    });
+}
+
+function styleMouseMove(polygon) {
+    polygon.setOptions({
+        strokeWeight: 4.0
+    })
+}
+
+function styleDefault(polygon) {
+    polygon.setOptions({
+        strokeWeight: 2
+    })
+}
+// const styleClicked = {
+//     ...styleDefault,
+//     strokeColor: "blue",
+//     fillColor: "blue",
+//     fillOpacity: 0.5,
+// };
+// const styleMouseMove = {
+//     ...styleDefault,
+// };
 
 function getCurrentLocation() {
     if (!navigator.geolocation) {
