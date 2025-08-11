@@ -6,6 +6,35 @@
 <!-- JAVA와 연결할 Mapper 파일 설정 -->
 <mapper namespace="kopo.poly.mapper.IUserInfoMapper">
 
+    <update id="updatePassword" parameterType="UserInfoDTO">
+        UPDATE USER_INFO
+        SET PASSWORD = #{password}
+        WHERE USER_ID = #{userId}
+    </update>
+
+
+    <select id="getUserId" parameterType="UserInfoDTO" resultType="userInfoDTO">
+        SELECT
+        USER_ID,
+        USER_NAME,
+        EMAIL
+        FROM USER_INFO
+        WHERE 1=1
+        <if test="userId neq null and userId neq '' ">
+            AND USER_ID = #{userId}
+        </if>
+        AND USER_NAME = #{userName}
+        AND EMAIL = #{email}
+    </select>
+
+
+    <select id="getLogin" parameterType="UserInfoDTO" resultType="UserInfoDTO">
+        SELECT USER_ID, USER_NAME, EMAIL
+        FROM USER_INFO
+        WHERE USER_ID = #{userId}
+        AND PASSWORD = #{password}
+    </select>
+
     <!-- 회원 가입 전 아이디 중복확인하기 -->
     <select id="getUserIdExists" parameterType="UserInfoDTO" resultType="UserInfoDTO">
         SELECT

@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.poly.mapper.IRankingMapper">
+
+    <select id="getUserByName" resultType="kopo.poly.dto.UserDTO">
+        SELECT * FROM USER_RANK WHERE user_name = #{name}
+    </select>
+
+    <insert id="insertUser">
+        INSERT INTO USER_RANK(user_name, points, distance, carbon_saved)
+        VALUES(#{name}, #{points}, #{distance}, #{carbonSaved})
+    </insert>
+
+    <update id="updateScore" parameterType="kopo.poly.dto.UserDTO">
+        UPDATE USER_RANK
+        SET points = points + #{points},
+            distance = distance + #{distance}
+            carbon_saved = carbon_saved + #{carbonSaved}
+        WHERE user_name = #{name}
+    </update>
+
+    <select id="getTop5" resultType="kopo.poly.dto.UserDTO">
+        SELECT * FROM USER_RANK ORDER BY points DESC LIMIT 5
+    </select>
+
+    <update id="resetWeekly">
+        UPDATE USER_RANK SET points = 0
+    </update>
+
+</mapper>

@@ -24,6 +24,59 @@ public class UserInfoService implements IUserInfoService {
     private final IMailService mailService;
 
     @Override
+    public int newPasswordProc(UserInfoDTO pDTO) throws Exception {
+
+        log.info("{}.newPasswordProc Start!", this.getClass().getName());
+
+        int success = userInfoMapper.updatePassword(pDTO);
+
+        log.info("{}.newPasswordProc End!", this.getClass().getName());
+
+        return success;
+    }
+
+    @Override
+    public UserInfoDTO searchUserIdOrPasswordProc(UserInfoDTO pDTO) throws Exception {
+
+        log.info("{}.seachUserIdOrPasswordProc Start", this.getClass().getName());
+
+        UserInfoDTO rDTO = userInfoMapper.getUserId(pDTO);
+
+        log.info("{}.searchUserIdOrPasswordProc End", this.getClass().getName());
+
+        return rDTO;
+    }
+
+    @Override
+    public UserInfoDTO getLogin(UserInfoDTO pDTO) throws Exception {
+
+        log.info("{}.getLogin Start!", this.getClass().getName());
+        log.info(pDTO.getUserId() + " " + pDTO.getPassword());
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoMapper.getLogin(pDTO)).orElseGet(UserInfoDTO::new);
+
+        if (!CmmUtil.nvl(rDTO.getUserId()).isEmpty()) {
+
+            MailDTO mDTO  = new MailDTO();
+
+            mDTO.setToMail(EncryptUtil.decAES128CBC(CmmUtil.nvl(rDTO.getEmail())));
+
+            mDTO.setTitle("로그인 알림!");
+
+//            mDTO.setContents(DateUtil.getDateTime("yyyy.MM.dd hh:mm:ss") + "에"
+//                    + CmmUtil.nvl(rDTO.getUserName()) + "님이 로그인하였습니다.");
+//
+
+            mDTO.setContents(CmmUtil.nvl(rDTO.getUserName()) + "님이 로그인하였습니다.");
+
+            mailService.doSendMail(mDTO);
+        }
+
+        log.info("{}.getLogin End!", this.getClass().getName());
+
+        return rDTO;
+    }
+
+    @Override
     public UserInfoDTO getUserIdExists(UserInfoDTO pDTO) throws Exception {
 
         log.info("{}.getUserIdExists Start!", this.getClass().getName());
@@ -74,6 +127,7 @@ public class UserInfoService implements IUserInfoService {
     public int insertUserInfo(UserInfoDTO pDTO) throws Exception {
 
         log.info("{}.inserUserInfo Start!", this.getClass().getName());
+        log.info(pDTO.getUserId() + " " + pDTO.getPassword());
 
         int res;
 
