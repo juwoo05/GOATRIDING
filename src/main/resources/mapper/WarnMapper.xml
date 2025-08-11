@@ -1,6 +1,64 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTO Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
 <mapper namespace="kopo.poly.mapper.IWarnMapper">
+
+    <!--
+      테이블 가정: warn_spot
+      컬럼:
+        id BIGINT AI PK,
+        spot_nm VARCHAR(200) NOT NULL,
+        occrrnc_cnt INT, caslt_cnt INT, dth_dnv_cnt INT, se_dnv_cnt INT, sl_dnv_cnt INT,
+        lo_crd DECIMAL(10,6), la_crd DECIMAL(10,6),
+        geom_json LONGTEXT,
+        src_hash CHAR(64) NOT NULL,
+        created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+        updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP,
+        UNIQUE KEY uk_spot (spot_nm, lo_crd, la_crd)
+    -->
+
+    <!-- ✅ 배치 Insert + Upsert -->
+    <insert id="insertList">
+        INSERT INTO warn_spot
+        (spot_nm, occrrnc_cnt, caslt_cnt, dth_dnv_cnt, se_dnv_cnt, sl_dnv_cnt,
+        lo_crd, la_crd, geom_json, src_hash)
+        VALUES
+        <foreach collection="list" item="it" separator=",">
+            (#{it.spot_nm}, #{it.occrrnc_cnt}, #{it.caslt_cnt},
+            #{it.dth_dnv_cnt}, #{it.se_dnv_cnt}, #{it.sl_dnv_cnt},
+            #{it.lo_crd}, #{it.la_crd}, #{it.geom_json}, #{it.src_hash})
+        </foreach>
+        ON DUPLICATE KEY UPDATE
+        occrrnc_cnt = VALUES(occrrnc_cnt),
+        caslt_cnt   = VALUES(caslt_cnt),
+        dth_dnv_cnt = VALUES(dth_dnv_cnt),
+        se_dnv_cnt  = VALUES(se_dnv_cnt),
+        sl_dnv_cnt  = VALUES(sl_dnv_cnt),
+        geom_json   = VALUES(geom_json),
+        src_hash    = VALUES(src_hash),
+        updated_at  = CURRENT_TIMESTAMP
+    </insert>
+
+    <!-- ✅ 단건 업서트 -->
+    <insert id="upsert">
+        INSERT INTO warn_spot
+        (spot_nm, occrrnc_cnt, caslt_cnt, dth_dnv_cnt, se_dnv_cnt, sl_dnv_cnt,
+         lo_crd, la_crd, geom_json, src_hash)
+        VALUES
+            (#{spot_nm}, #{occrrnc_cnt}, #{caslt_cnt},
+             #{dth_dnv_cnt}, #{se_dnv_cnt}, #{sl_dnv_cnt},
+             #{lo_crd}, #{la_crd}, #{geom_json}, #{src_hash})
+            ON DUPLICATE KEY UPDATE
+                                 occrrnc_cnt = VALUES(occrrnc_cnt),
+                                 caslt_cnt   = VALUES(caslt_cnt),
+                                 dth_dnv_cnt = VALUES(dth_dnv_cnt),
+                                 se_dnv_cnt  = VALUES(se_dnv_cnt),
+                                 sl_dnv_cnt  = VALUES(sl_dnv_cnt),
+                                 geom_json   = VALUES(geom_json),
+                                 src_hash    = VALUES(src_hash),
+                                 updated_at  = CURRENT_TIMESTAMP
+    </insert>
 
 </mapper>
