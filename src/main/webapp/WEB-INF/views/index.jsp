@@ -157,7 +157,7 @@
 				content.style.color = "#00ff99"
 			});
 
-			document.querySelector(".hero").addEventListener("mouseenter", () => {
+			document.querySelector(".hero h1").addEventListener("mouseenter", () => {
 				blurBg.style.backgroundImage = `url('/images/화면 캡처 2025-07-10 205810.png.png')`
 				content.style.color = "#FFFFFF"
 			});
@@ -177,9 +177,9 @@
 			<a href="/">RIDING GOAT</a>
 		</div>
 		<div class="menu">
-			<a href="/map">Dangerous Map</a>
-			<a href="/ranking">Ranking</a>
-			<a href="/community">Community</a>
+			<a href="/map/map">Dangerous Map</a>
+			<a href="/rank/ranking">Ranking</a>
+			<a href="/notice/noticeList">Community</a>
 		</div>
 		<div class="auth-buttons">
 			<a href="/user/login" class="auth-link">Login</a>
@@ -194,19 +194,19 @@
 
 	<div class="section">
 		<div>
-			<div class="circle-link link-map" onclick="location.href='/map'">
+			<div class="circle-link link-map" onclick="location.href='/map/map'">
 				<img src="/images/map-thumbnail.png" alt="Dangerous Map" />
 			</div>
 			<div class="label">Dangerous Map</div>
 		</div>
 		<div>
-			<div class="circle-link link-ranking" onclick="location.href='/ranking'">
+			<div class="circle-link link-ranking" onclick="location.href='/rank/ranking'">
 				<img src="/images/ranking-thumbnail.png" alt="Ranking" />
 			</div>
 			<div class="label">Ranking</div>
 		</div>
 		<div>
-			<div class="circle-link link-community" onclick="location.href='/community'">
+			<div class="circle-link link-community" onclick="location.href='/notice/noticeList'">
 				<img src="/images/community-thumbnail.png" alt="Community" />
 			</div>
 			<div class="label">Community</div>
