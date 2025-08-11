@@ -107,14 +107,14 @@ function initMap() {
     // 마우스가 폴리곤 밖으로 나갔을 때
     map.addListener("mousemove", function (e) {
         if (lastHoveredPolygon) {
-            // 마우스가 어떤 폴리곤에도 안 올라간 상태로 감지되었을 때 초기화
+            // 마우스가 어떤 폴리곤에도 안 올라간 상태로 감지되었을 때 초기화 d
             styleDefault(lastHoveredPolygon);
             lastHoveredPolygon = null;
         }
     });
 
     const contentString =
-        '<div id="content">' +
+        '<div id="content" style="color:black;">' +
         '<div id="siteNotice">' +
         "</div>" +
         '<h1 id="firstHeading" class="firstHeading">사건건수:8</h1>' +
