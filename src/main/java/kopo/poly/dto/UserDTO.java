@@ -14,5 +14,5 @@ public class UserDTO {
     private int points;        // 누적 점수
     private double distance;   // 누적 주행 거리
     private double carbonSaved; // 탄소 절약
-    private String createdAt;   // 가입 날짜
+    private String createdAt;   // 가입 날짜 데이트하고싶어
 }
