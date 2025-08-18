@@ -23,7 +23,7 @@ let placesService = null;         // 별칭
 // 지도를 자동으로 따라갈지 여부 (버튼으로 토글)
 let followUser = false;
 
-// ---- SDK 로드 후 초기화 ----
+// ---- SDK 로드 후 초기화 -----
 if (window.kakao && kakao.maps && kakao.maps.load) {
     kakao.maps.load(initKakao);
 } else {
