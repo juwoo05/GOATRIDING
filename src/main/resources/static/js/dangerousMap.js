@@ -18,7 +18,7 @@ const OFF_ROUTE_THRESHOLD_M = 120;// 합류 이후 이탈 기준
 // 검색/지오코더
 let kakaoPlaces = null;           // kakao.maps.services.Places
 let kakaoGeocoder = null;         // kakao.maps.services.Geocoder
-let placesService = null;         // 별칭
+let placesService = null;         // 별칭hhh
 
 // 지도를 자동으로 따라갈지 여부 (버튼으로 토글)
 let followUser = false;
@@ -32,8 +32,7 @@ if (window.kakao && kakao.maps && kakao.maps.load) {
 
 function initKakao() {
 
-    var areas = [
-        {
+    var areas = [{
             name : '용산구',
             path : [
                 new kakao.maps.LatLng(37.5548768201904, 126.96966524449994),
