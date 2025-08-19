@@ -18,7 +18,7 @@ public class RankingPageController {
     private final IRankingService rankingService;
 
     // ✅ JSP용 랭킹 페이지 GET 요청
-    @GetMapping("/ranking")
+    @GetMapping("/rank/ranking")
     public String rankingPage(Model model) {
 
         // 상위 5명의 유저 데이터를 가져와서

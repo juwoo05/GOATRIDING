@@ -24,9 +24,11 @@ public class MapController {
 
         // --- 더미 데이터 (그대로 사용/교체 자유) ---
         List<DangerousArea> areas = List.of(
-                new DangerousArea("1", "강남역 사거리", 37.4979, 127.0276, "high", "지난달 3건 사고", 3),
+                new DangerousArea("1", "강남역앙기모띠 사거리", 37.4979, 127.0276, "high", "지난달 3건 사고", 3),
                 new DangerousArea("2", "교대역 근처",   37.4935, 127.0146, "medium","지난주 1건 사고", 1)
         );
+
+
 
         List<RoutePoint> r1 = List.of(
                 new RoutePoint(37.4979, 127.0276),   // 강남역

@@ -5,24 +5,31 @@
   <meta charset="UTF-8">
   <title>로그인하기</title>
   <link rel="stylesheet" href="/css/table.css"/>
+  <link rel="stylesheet" href="/css/modal.css"/>
   <script type="text/javascript" src="/js/jquery-3.6.0.min.js"></script>
   <script type="text/javascript">
 
     // HTML로딩이 완료되고, 실행됨
     $(document).ready(function () {
+      const modal = document.querySelector('.modal');
+      const btnOpenModal=document.querySelector('.btn-open-modal');
+
+      btnOpenModal.addEventListener("click", ()=>{
+        modal.style.display="flex";
+      });
 
       // 회원가입
-      $("#btnUserReg").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
+      $("#btnGoJoin").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
         location.href = "/user/userRegForm";
       })
 
       // 아이디 찾기
-      $("#btnSearchUserId").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
+      $("#btnGoFindId").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
         location.href = "/user/searchUserId";
       })
 
       // 비밀번호 찾기
-      $("#btnSearchPassword").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
+      $("#btnGoFindPw").on("click", function () { // 버튼 클릭했을때, 발생되는 이벤트 생성함(onclick 이벤트와 동일함)
         location.href = "/user/searchPassword";
       })
 
@@ -68,34 +75,43 @@
   </script>
 </head>
 <body>
-<h2>로그인하기</h2>
-<hr/>
-<br/>
-<form id="f">
-  <div class="divTable minimalistBlack">
-    <div class="divTableBody">
-      <div class="divTableRow">
-        <div class="divTableCell">아이디
-        </div>
-        <div class="divTableCell">
-          <input type="text" name="userId" id="userId" style="width:95%"/>
-        </div>
+<main>
+  <section class="login-section">
+    <form id="f" class="login-box" th:action="@{/user/loginProc}" method="post">
+      <img th:src="@{/images/person.png}" alt="로그인 아이콘" class="login-icon">
+      <h2>로그인</h2>
+
+      <div class="input-group1" style="position:relative">
+        <label for="userId">아이디</label>
+        <img th:src="@{/images/person.png}" alt="아이디 아이콘" class="input-icon">
+        <input type="text" id="userId" name="userId" placeholder="아이디를 입력하세요" required>
       </div>
-      <div class="divTableRow">
-        <div class="divTableCell">비밀번호
-        </div>
-        <div class="divTableCell">
-          <input type="password" name="password" id="password" style="width:95%"/>
-        </div>
+
+      <div class="input-group1" style="position:relative">
+        <label for="password">비밀번호</label>
+        <img th:src="@{/images/secure.png}" alt="비밀번호 아이콘" class="input-icon">
+        <input type="password" id="password" name="password" placeholder="비밀번호를 입력하세요" required>
       </div>
-    </div>
+
+      <div class="login-buttons">
+        <button type="button" id="btnLogin" class="btn login-btn">로그인</button>
+        <hr class="divider">
+        <div class="sub-buttons">
+          <button type="button" id="btnGoFindId" class="btn small-btn">아이디 찾기</button>
+          <button type="button" id="btnGoFindPw" class="btn small-btn">비밀번호 찾기</button>
+        </div>
+        <button type="button" id="btnGoJoin" class="btn outline-btn">회원가입</button>
+      </div>
+    </form>
+  </section>
+  <button class="btn-open-modal">Modal열기</button>
+
+</main>
+<div class="modal">
+  <div class="modal_body">
+    <h2>모달창 제목</h2>
+    <p>모달창 내용 </p>
   </div>
-  <div>
-    <button id="btnLogin" type="button">로그인</button>
-    <button id="btnUserReg" type="button">회원가입</button>
-    <button id="btnSearchUserId" type="button">아이디 찾기</button>
-    <button id="btnSearchPassword" type="button">비밀번호 찾기</button>
-  </div>
-</form>
+</div>
 </body>
 </html>
