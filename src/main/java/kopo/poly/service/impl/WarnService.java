@@ -37,7 +37,7 @@ public class WarnService implements IWarnService {
         // ✅ 하드코딩 값은 우선 유지. 나중에 컨트롤러/파라미터로 뺄 수 있음.
         String searchYearCd = "2021";
         String siDo = "11";
-        String guGun = "500";
+        String guGun = "440";
         String type = "json";
         String numOfRows = "1000"; // 🔁 기존 10 → 1000으로 상향(호출 수 줄여 성능↑). 필요 시 페이징 구현.
         String pageNo = "1";

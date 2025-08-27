@@ -3,83 +3,69 @@
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 
-<!-- JAVA와 연결할 Mapper 파일 설정 -->
 <mapper namespace="kopo.poly.mapper.IUserInfoMapper">
 
-    <update id="updatePassword" parameterType="UserInfoDTO">
+    <!-- 공통 매핑 -->
+    <resultMap id="UserInfoMap" type="kopo.poly.dto.UserInfoDTO">
+        <result column="USER_ID"   property="userId"/>
+        <result column="USER_NAME" property="userName"/>
+        <result column="EMAIL"     property="email"/>
+        <result column="ADDR1"     property="addr1"/>
+        <result column="ADDR2"     property="addr2"/>
+        <result column="REG_ID"    property="regId"/>
+        <result column="REG_DT"    property="regDt"/>
+        <result column="CHG_ID"    property="chgId"/>
+        <result column="CHG_DT"    property="chgDt"/>
+    </resultMap>
+
+    <!-- 비밀번호 재설정 -->
+    <update id="updatePassword" parameterType="kopo.poly.dto.UserInfoDTO">
         UPDATE USER_INFO
         SET PASSWORD = #{password}
-        WHERE USER_ID = #{userId}
+        WHERE EMAIL    = #{email}
     </update>
 
-
-    <select id="getUserId" parameterType="UserInfoDTO" resultType="userInfoDTO">
-        SELECT
-        USER_ID,
-        USER_NAME,
-        EMAIL
+    <!-- 이메일로 사용자 조회(선택적 userId 조건) -->
+    <select id="getUserId" parameterType="kopo.poly.dto.UserInfoDTO" resultMap="UserInfoMap">
+        SELECT USER_ID, USER_NAME, EMAIL
         FROM USER_INFO
         WHERE 1=1
-        <if test="userId neq null and userId neq '' ">
+        <if test="userId != null and userId != ''">
             AND USER_ID = #{userId}
         </if>
-        AND USER_NAME = #{userName}
         AND EMAIL = #{email}
     </select>
 
-
-    <select id="getLogin" parameterType="UserInfoDTO" resultType="UserInfoDTO">
+    <!-- 로그인 -->
+    <select id="getLogin" parameterType="kopo.poly.dto.UserInfoDTO" resultMap="UserInfoMap">
         SELECT USER_ID, USER_NAME, EMAIL
         FROM USER_INFO
-        WHERE USER_ID = #{userId}
-        AND PASSWORD = #{password}
+        WHERE USER_ID  = #{userId}
+          AND PASSWORD = #{password}
+            LIMIT 1
     </select>
 
-    <!-- 회원 가입 전 아이디 중복확인하기 -->
-    <select id="getUserIdExists" parameterType="UserInfoDTO" resultType="UserInfoDTO">
-        SELECT
-            CASE WHEN COUNT(USER_ID) > 0 THEN 'Y' ELSE 'N' END AS EXISTS_YN
+    <!-- 아이디 중복 확인 -->
+    <select id="getUserIdExists" parameterType="kopo.poly.dto.UserInfoDTO" resultType="kopo.poly.dto.UserInfoDTO">
+        SELECT CASE WHEN COUNT(USER_ID) > 0 THEN 'Y' ELSE 'N' END AS existsYn
         FROM USER_INFO
         WHERE USER_ID = #{userId}
     </select>
 
-    <!-- 회원 가입 전 이메일 중복체크하기 -->
-    <select id="getEmailExists" parameterType="UserInfoDTO" resultType="UserInfoDTO">
-        SELECT
-            CASE WHEN COUNT(USER_ID) > 0 THEN 'Y' ELSE 'N' END AS EXISTS_YN
+    <!-- 이메일 중복 확인 (이메일은 컨트롤러에서 AES로 암호화되어 들어옴) -->
+    <select id="getEmailExists" parameterType="kopo.poly.dto.UserInfoDTO" resultType="kopo.poly.dto.UserInfoDTO">
+        SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END AS existsYn
         FROM USER_INFO
         WHERE EMAIL = #{email}
     </select>
 
-    <!-- 회원 가입하기(회원정보 등록하기) -->
-    <insert id="insertUserInfo" parameterType="UserInfoDTO">
+    <!-- 회원가입 -->
+    <insert id="insertUserInfo" parameterType="kopo.poly.dto.UserInfoDTO">
         INSERT INTO USER_INFO
-        (
-            USER_ID,
-            USER_NAME,
-            PASSWORD,
-            EMAIL,
-            ADDR1,
-            ADDR2,
-            REG_ID,
-            REG_DT,
-            CHG_ID,
-            CHG_DT
-        )
-        VALUES (
-                   #{userId},
-                   #{userName},
-                   #{password},
-                   #{email},
-                   #{addr1},
-                   #{addr2},
-                   #{userId},   -- 등록자 ID (보통 자기자신)
-                   NOW(),       -- 등록일시
-                   #{userId},   -- 수정자 ID (처음엔 자기자신)
-                   NOW()        -- 수정일시
-               )
+        (USER_ID, USER_NAME, PASSWORD, EMAIL, ADDR1, ADDR2, REG_ID, REG_DT, CHG_ID, CHG_DT)
+        VALUES
+            (#{userId}, #{userName}, #{password}, #{email}, #{addr1}, #{addr2},
+             #{userId}, NOW(), #{userId}, NOW())
     </insert>
 
 </mapper>
-
-

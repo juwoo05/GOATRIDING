@@ -1,34 +1,20 @@
+/* modal.css */
 .modal{
-    position:absolute;
-    display:none;
-
-    justify-content: center;
-    top:0;
-    left:0;
-
-    width:100%;
-    height:100%;
-
-
-
+    position: fixed;          /* absolute → fixed 권장 */
+    display: none;
+    inset: 0;                 /* top/left/width/height 대신 한 줄 */
+    justify-content: center;  /* 가운데 정렬 */
+    align-items: center;      /* 가운데 정렬 */
     background-color: rgba(0,0,0,0.4);
+    z-index: 9999;            /* 위로 */
 }
-
 .modal_body{
-    position:absolute;
-    top:50%; //모달을 화면가운데 놓기위함.
-
-
-    width:400px;  //모달의 가로크기
-    height:600px; //모달의 세로크기
-
-    padding:40px;
-
+    position: relative;       /* absolute → relative (flex 중앙정렬 활용) */
+    width: 300px; height: 200px;
+    padding: 40px;
     text-align: center;
-
-    background-color: rgb(255,255,255); //모달창 배경색 흰색
-    border-radius:10px; //테두리
-    box-shadow:0 2px 3px 0 rgba(34,36,38,0.15); //테두리 그림자
-
-    transform:translateY(-50%); //모듈창열었을때 위치설정 가운데로
+    background: #fff;
+    border-radius:10px;
+    box-shadow:0 2px 3px rgba(34,36,38,0.15);
 }
+#modalButton{ /* 그대로 사용 OK */ }

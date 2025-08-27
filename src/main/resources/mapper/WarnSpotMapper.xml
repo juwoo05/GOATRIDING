@@ -1,0 +1,38 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kopo.poly.repository.WarnSpotMapper">
+
+    <resultMap id="WarnSpotMap" type="kopo.poly.repository.row.WarnSpotRow">
+        <id     property="id"          column="id"/>
+        <result property="spotNm"      column="spot_nm"/>
+        <result property="occrrncCnt"  column="occrrnc_cnt"/>
+        <result property="laCrd"       column="la_crd"/>
+        <result property="loCrd"       column="lo_crd"/>
+        <result property="geomJson"    column="geom_json"/>
+        <result property="srcHash"     column="src_hash"/>
+    </resultMap>
+
+    <select id="selectWithinBounds" resultMap="WarnSpotMap">
+        SELECT id, spot_nm, occrrnc_cnt, la_crd, lo_crd, geom_json, src_hash
+        FROM warn_spot
+        WHERE la_crd BETWEEN #{minLat} AND #{maxLat}
+          AND lo_crd BETWEEN #{minLng} AND #{maxLng}
+        ORDER BY occrrnc_cnt DESC, id DESC
+            LIMIT #{limit}
+    </select>
+
+    <insert id="upsert">
+        INSERT INTO warn_spot
+            (spot_nm, occrrnc_cnt, la_crd, lo_crd, geom_json, src_hash, updated_at)
+        VALUES
+            (#{spotNm}, #{occrrncCnt}, #{laCrd}, #{loCrd}, #{geomJson}, #{srcHash}, NOW())
+            ON DUPLICATE KEY UPDATE
+                                 spot_nm      = VALUES(spot_nm),
+                                 occrrnc_cnt  = VALUES(occrrnc_cnt),
+                                 la_crd       = VALUES(la_crd),
+                                 lo_crd       = VALUES(lo_crd),
+                                 geom_json    = VALUES(geom_json),
+                                 updated_at   = NOW()
+    </insert>
+</mapper>

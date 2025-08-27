@@ -1,4 +1,9 @@
+<%@ page import="kopo.poly.util.CmmUtil" %>
 <%@ page contentType="text/html; charset=UTF-8" pageEncoding="UTF-8" %>
+<%
+	String ssUserName = CmmUtil.nvl((String) session.getAttribute("SS_USER_NAME")); // 로그인된 회원 이름
+	String ssUserId = CmmUtil.nvl((String) session.getAttribute("SS_USER_ID")); // 로그인된 회원 아이디
+%>
 <!DOCTYPE html>
 <html lang="en">
 <head>
@@ -182,9 +187,17 @@
 			<a href="/notice/noticeList">Community</a>
 		</div>
 		<div class="auth-buttons">
+			<% if (ssUserId.equals("")) { %>
+			<!-- 로그인 안됨 -->
 			<a href="/user/login" class="auth-link">Login</a>
 			<a href="/user/userRegForm" class="auth-link">Sign Up</a>
+			<% } else { %>
+			<!-- 로그인됨 -->
+			<a href="/user/myPage" class="auth-link"><%= ssUserName %></a>
+			<a href="/user/logout" class="auth-link">Logout</a>
+			<% } %>
 		</div>
+
 	</div>
 
 	<div class="hero">

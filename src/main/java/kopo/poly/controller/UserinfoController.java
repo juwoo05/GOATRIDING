@@ -44,28 +44,27 @@ public class UserinfoController {
     public String searchPasswordProc(HttpServletRequest request, ModelMap model, HttpSession session) throws Exception {
         log.info("{}.searchPasswordProc", this.getClass().getName());
 
-        String userId = CmmUtil.nvl(request.getParameter("userId"));
-        String userName = CmmUtil.nvl(request.getParameter("userName"));
-        String email = CmmUtil.nvl(request.getParameter("email"));
 
-        log.info("userId : {} / userName : {} / email : {} ", userId, userName, email);
+        String email = CmmUtil.nvl(request.getParameter("email"));
+        session.setAttribute("SS_EMAIL", email);
+
+        log.info("email : {} ", email);
 
         UserInfoDTO pDTO = new UserInfoDTO();
-        pDTO.setUserId(userId);
-        pDTO.setUserName(userName);
+
         pDTO.setEmail(EncryptUtil.encAES128CBC(email));
 
         UserInfoDTO rDTO = Optional.ofNullable(userInfoService.searchUserIdOrPasswordProc(pDTO)).orElseGet(UserInfoDTO::new);
 
         model.addAttribute("rDTO", rDTO);
 
-        session.setAttribute("NEW_PASSWORD", userId);
 
         log.info("{}.searchPasswordProc End!", this.getClass().getName());
 
         return "user/newPassword";
     }
 
+    @ResponseBody
     @PostMapping(value = "newPasswordProc")
     public String newPasswordProc(HttpServletRequest request, ModelMap model, HttpSession session) throws Exception {
 
@@ -73,34 +72,26 @@ public class UserinfoController {
 
         String msg;
 
-        String newPassword = CmmUtil.nvl((String) session.getAttribute("NEW_PASSWORD"));
+        String email = CmmUtil.nvl((String) session.getAttribute("SS_EMAIL"));
+        String password = CmmUtil.nvl(request.getParameter("password"));
 
-        if (!newPassword.isEmpty()) {
-            String password = CmmUtil.nvl(request.getParameter("password"));
+        log.info("password : {}", password);
 
-            log.info("password : {}", password);
+        UserInfoDTO pDTO = new UserInfoDTO();
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email));
+        pDTO.setPassword(EncryptUtil.encHashSHA256(password));
 
-            UserInfoDTO pDTO = new UserInfoDTO();
-            pDTO.setUserId(newPassword);
-            pDTO.setPassword(EncryptUtil.encHashSHA256(password));
+        userInfoService.newPasswordProc(pDTO);
 
-            userInfoService.newPasswordProc(pDTO);
-
-            session.setAttribute("NEW_PASSWORD", "");
-            session.removeAttribute("NEW_PASSWORD");
-
-            msg = "비밀번호가 재설정되었습니다.";
-
-        } else {
-            msg = "비정상 접근입니다.";
-        }
+        msg = "비밀번호가 재설정되었습니다.";
 
         model.addAttribute("msg", msg);
 
         log.info("{}.user/newPasswordProc End!", this.getClass().getName());
 
-        return "user/newPasswordResult";
+        return msg;
     }
+
     @GetMapping(value = "searchUserId")
     public String searchUserId() {
         log.info("{}.user/searchUserId Start", this.getClass().getName());
@@ -112,23 +103,21 @@ public class UserinfoController {
     }
 
     @PostMapping(value = "searchUserIdProc")
-    public String searchUserIdProc(HttpServletRequest request, ModelMap model) throws Exception {
+    @ResponseBody // JSON 변환해서 반환
+    public UserInfoDTO searchUserIdProc(HttpServletRequest request) throws Exception {
         log.info("{}.searchUserIdProc Start", this.getClass().getName());
 
-        String userName = CmmUtil.nvl(request.getParameter("userName"));
         String email = CmmUtil.nvl(request.getParameter("email"));
 
         UserInfoDTO pDTO = new UserInfoDTO();
-        pDTO.setUserName(userName);
         pDTO.setEmail(EncryptUtil.encAES128CBC(email));
         UserInfoDTO rDTO = Optional.ofNullable(userInfoService.searchUserIdOrPasswordProc(pDTO))
                 .orElseGet(UserInfoDTO::new);
 
-        model.addAttribute("rDTO", rDTO);
-
+        log.info("결과: {}", rDTO);
         log.info("{}.searchUserIdProc End", this.getClass().getName());
 
-        return "user/searchUserIdResult";
+        return rDTO; // JSON 으로 내려감
     }
 
     @GetMapping(value = "login")
@@ -151,7 +140,7 @@ public class UserinfoController {
 
         UserInfoDTO pDTO;
 
-        try{
+        try {
 
             String userId = CmmUtil.nvl(request.getParameter("userId"));
             String password = CmmUtil.nvl(request.getParameter("password"));
@@ -173,6 +162,7 @@ public class UserinfoController {
 
                 session.setAttribute("SS_USER_ID", userId);
                 session.setAttribute("SS_USER_NAME", CmmUtil.nvl(rDTO.getUserName()));
+                session.setAttribute("SS_EMAIL", CmmUtil.nvl(rDTO.getEmail()));
             } else {
                 msg = "아이디와 비밀번호가 올바르지 않습니다.";
 
@@ -253,6 +243,26 @@ public class UserinfoController {
     }
 
     @ResponseBody
+    @PostMapping(value = "getUserIdByEmail")
+    public UserInfoDTO getUserIdByEmail(HttpServletRequest request) throws Exception {
+
+        log.info("{}.getUserIdByEmail Start!", this.getClass().getName());
+
+        String email = CmmUtil.nvl(request.getParameter("email"));
+
+        log.info("email : {}", email);
+
+        UserInfoDTO pDTO = new UserInfoDTO();
+        pDTO.setEmail(EncryptUtil.encAES128CBC(email));
+
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoService.getUserIdByEmail(pDTO)).orElseGet(UserInfoDTO::new);
+
+        log.info("{}.getUserIdExists End!", this.getClass().getName());
+
+        return rDTO;
+    }
+
+    @ResponseBody
     @PostMapping(value = "insertUserInfo")
     public MsgDTO insertUserInfo(HttpServletRequest request) throws Exception {
 
@@ -294,7 +304,7 @@ public class UserinfoController {
 
             log.info("회원가입 결과(res) : " + res);
 
-            if  (res == 1) {
+            if (res == 1) {
                 msg = "회원가입되었습니다.";
             } else if (res == 2) {
                 msg = "이미 가입된 아이디입니다.";
@@ -316,4 +326,23 @@ public class UserinfoController {
         return dto;
     }
 
+    @GetMapping("/logout")
+    public String logout(HttpSession session) {
+        log.info("{}.Logout Start!", this.getClass().getName());
+
+        log.info("로그아웃 요청 발생");
+        session.invalidate(); // 세션 무효화
+
+        log.info("{}.Logout End!", this.getClass().getName());
+
+        return "redirect:/";  // 메인 페이지로 리다이렉트
+
+    }
+
+    @RequestMapping(value = "/myPage")
+    public String mypage() throws Exception{
+        log.info("{}.Mypage Start!", this.getClass().getName());
+        log.info("{}.Mypage End!", this.getClass().getName());
+        return "/user/myPage";
+    }
 }

@@ -29,7 +29,6 @@ public class UserInfoDTO {
 
     private String chgDt;
 
-
     private String existsYn;
 
     private int authNumber;

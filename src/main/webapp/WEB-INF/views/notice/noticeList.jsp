@@ -12,7 +12,7 @@
 <head>
     <meta charset="UTF-8">
     <title>공지 리스트</title>
-    <link rel="stylesheet" href="/css/table.css"/>
+    <link rel="stylesheet" href="/css/notice.css"/>
     <script type="text/javascript">
 
         //상세보기 이동

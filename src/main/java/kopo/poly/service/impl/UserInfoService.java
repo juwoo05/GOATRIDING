@@ -31,7 +31,7 @@ public class UserInfoService implements IUserInfoService {
         int success = userInfoMapper.updatePassword(pDTO);
 
         log.info("{}.newPasswordProc End!", this.getClass().getName());
-
+        log.info("{}", success);
         return success;
     }
 
@@ -98,6 +98,40 @@ public class UserInfoService implements IUserInfoService {
         log.info("rDTO : {}", rDTO);
 
         if (CmmUtil.nvl(rDTO.getExistsYn()).equals("N")) {
+
+            // 6자리 랜덤 숫자 생성하기
+            int authNumber = ThreadLocalRandom.current().nextInt(100000, 1000000);
+
+            log.info("authNumber : {}", authNumber);
+
+            // 인증번호 발송 로직
+            MailDTO dto = new MailDTO();
+
+            dto.setTitle("이메일 중복 확인 인증번호 발송 메일");
+            dto.setContents("인증번호는 " + authNumber + " 입니다.");
+            dto.setToMail(EncryptUtil.decAES128CBC(CmmUtil.nvl(pDTO.getEmail())));
+
+            mailService.doSendMail(dto); // 이메일 발송
+
+            dto = null;
+
+            rDTO.setAuthNumber(authNumber); // 인증번호를 결과값에 넣어주기
+        }
+
+        log.info("{}.emailAuth End!", this.getClass().getName());
+
+        return rDTO;
+    }
+
+    @Override
+    public UserInfoDTO getUserIdByEmail(UserInfoDTO pDTO) throws Exception {
+        log.info("{}.emailAuth Start!", this.getClass().getName());
+
+        UserInfoDTO rDTO = Optional.ofNullable(userInfoMapper.getEmailExists(pDTO)).orElseGet(UserInfoDTO::new);
+
+        log.info("rDTO : {}", rDTO);
+
+        if (CmmUtil.nvl(rDTO.getExistsYn()).equals("Y")) {
 
             // 6자리 랜덤 숫자 생성하기
             int authNumber = ThreadLocalRandom.current().nextInt(100000, 1000000);

@@ -7,8 +7,11 @@ public interface IUserInfoService {
     // 아이디 중복 체크
     UserInfoDTO getUserIdExists(UserInfoDTO pDTO) throws Exception;
 
-    // 이메일 주소 중복 체크 및 인증 여부
+    // 이메일 주소 중복 체크 및 인증 여부(회원가입 용)
     UserInfoDTO getEmailExists(UserInfoDTO pDTO) throws Exception;
+
+    // 이메일 주소 중복 체크 및 인증 여부(아이디 조회 용)
+    UserInfoDTO getUserIdByEmail(UserInfoDTO pDTO) throws Exception;
 
     UserInfoDTO getLogin(UserInfoDTO pDTO) throws Exception;
 
