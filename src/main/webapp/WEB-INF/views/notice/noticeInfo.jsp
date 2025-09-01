@@ -11,11 +11,11 @@
 <head>
     <meta charset="UTF-8">
     <title>게시판 글보기</title>
-    <link rel="stylesheet" href="/css/table.css"/>
+    <link rel="stylesheet" href="/css/notice.css"/>
     <script type="text/javascript" src="/js/jquery-3.6.0.min.js"></script>
     <script>
         // Controller에서 받은 세션에 저장된 값
-        const session_user_id = "<%=CmmUtil.nvl((String)session.getAttribute("SESSION_USER_ID"))%>";
+        const session_user_id = "<%=CmmUtil.nvl((String)session.getAttribute("SS_USER_ID"))%>";
 
         // 공지사항 게시글 작성자 아이디
         const user_id = "<%=CmmUtil.nvl(rDTO.getUserId())%>";

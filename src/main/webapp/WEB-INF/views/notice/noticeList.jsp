@@ -7,6 +7,9 @@
     // NoticeController 함수에서 model 객체에 저장된 값 불러오기
     List<NoticeDTO> rList = (List<NoticeDTO>) request.getAttribute("rList");
 %>
+<%
+    String ssUserId = CmmUtil.nvl((String) session.getAttribute("SS_USER_ID")); // 로그인된 회원 아이디
+%>
 <!DOCTYPE html>
 <html lang="en" xmlns:th="http://www.thymeleaf.org">
 <head>
@@ -55,7 +58,7 @@
             </div>
             <div class="divTableCell"><%=CmmUtil.nvl(dto.getReadCnt())%>
             </div>
-            <div class="divTableCell"><%=CmmUtil.nvl(dto.getUserName())%>
+            <div class="divTableCell"><%=CmmUtil.nvl(dto.getUserId())%>
             </div>
             <div class="divTableCell"><%=CmmUtil.nvl(dto.getRegDt())%>
             </div>
@@ -65,6 +68,12 @@
         %>
     </div>
 </div>
-<a href="/notice/noticeReg">글쓰기</a>
+<div class="auth-buttons">
+    <% if (ssUserId.equals("")) { %>
+    <a href="/user/login?redirect=/notice/noticeList">글쓰기</a>
+    <% } else { %>
+    <a href="/notice/noticeReg">글쓰기</a>
+    <% } %>
+</div>
 </body>
 </html>

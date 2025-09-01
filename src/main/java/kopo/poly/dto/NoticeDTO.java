@@ -28,4 +28,5 @@ public class NoticeDTO {
     private String chgDt;
 
     private String userName;
+
 }

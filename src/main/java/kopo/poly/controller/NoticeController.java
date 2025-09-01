@@ -33,7 +33,6 @@ public class NoticeController {
 
         log.info("{}.noticeList Start!", this.getClass().getName());
 
-        session.setAttribute("SESSION_USER_ID", "USER01");
 
         List<NoticeDTO> rList = Optional.ofNullable(noticeService.getNoticeList())
                 .orElseGet(ArrayList::new);
@@ -54,7 +53,6 @@ public class NoticeController {
         return "notice/noticeReg";
     }
 
-
     @ResponseBody
     @PostMapping(value = "noticeInsert")
     public MsgDTO noticeInsert(HttpServletRequest request, HttpSession session) {
@@ -66,7 +64,7 @@ public class NoticeController {
 
         try {
 
-            String userId = CmmUtil.nvl((String) session.getAttribute("SESSION_USER_ID"));
+            String userId = CmmUtil.nvl((String) session.getAttribute("SS_USER_ID"));
             String title = CmmUtil.nvl(request.getParameter("title"));
             String noticeYn = CmmUtil.nvl(request.getParameter("noticeYn"));
             String contents = CmmUtil.nvl(request.getParameter("contents"));
@@ -115,7 +113,6 @@ public class NoticeController {
                 .orElseGet(NoticeDTO::new);
 
         model.addAttribute("rDTO", rDTO);
-
         log.info("{}.noticeInfo End!", this.getClass().getName());
 
         return "notice/noticeInfo";

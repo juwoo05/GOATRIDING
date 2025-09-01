@@ -4,10 +4,9 @@
 <mapper namespace="kopo.poly.mapper.INoticeMapper">
 
     <select id="getNoticeList" resultType="NoticeDTO">
-        SELECT N.NOTICE_SEQ, N.TITLE, N.NOTICE_YN, N.READ_CNT, U.USER_NAME, N.USER_ID,
+        SELECT N.NOTICE_SEQ, N.TITLE, N.NOTICE_YN, N.READ_CNT, N.USER_ID,
                TO_CHAR(N.REG_DT, 'YYYY-MM-DD') AS REG_DT
-        FROM NOTICE N, USER_INFO U
---         WHERE N.USER_ID = U.USER_ID
+        FROM NOTICE N
         ORDER BY N.NOTICE_YN, N.REG_DT DESC
     </select>
 
@@ -24,13 +23,10 @@
     </insert>
 
     <select id="getNoticeInfo" resultType="NoticeDTO">
-        SELECT N.NOTICE_SEQ, N.TITLE, N.NOTICE_YN, N.READ_CNT, U.USER_NAME, N.USER_ID,
+        SELECT N.NOTICE_SEQ, N.TITLE, N.NOTICE_YN, N.READ_CNT, N.USER_ID,
                CONTENTS, TO_CHAR(N.REG_DT, 'YYYY-MM-DD') AS REG_DT
-            FROM NOTICE N, USER_INFO U
---         WHERE N.USER_ID = U.USER_ID
---             AND N.NOTICE_SEQ = #{noticeSeq}
+            FROM NOTICE N
             WHERE N.NOTICE_SEQ = #{noticeSeq}
-
     </select>
 
     <update id="updateNoticeReadCnt" parameterType="NoticeDTO">

@@ -16,6 +16,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.MessageDigest;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Service
@@ -34,57 +35,83 @@ public class WarnService implements IWarnService {
 
         log.info("WarnService.getDangerous START");
 
-        // ✅ 하드코딩 값은 우선 유지. 나중에 컨트롤러/파라미터로 뺄 수 있음.
         String searchYearCd = "2021";
-        String siDo = "11";
-        String guGun = "440";
+        String siDo = "11"; // 서울
         String type = "json";
-        String numOfRows = "1000"; // 🔁 기존 10 → 1000으로 상향(호출 수 줄여 성능↑). 필요 시 페이징 구현.
+        String numOfRows = "1000";
         String pageNo = "1";
 
-        // ✅ 문자열 더하기 대신 가독성 좋게 템플릿 구성
-        String apiParam = String.format(
-                "?ServiceKey=%s&searchYearCd=%s&siDo=%s&guGun=%s&type=%s&numOfRows=%s&pageNo=%s",
-                apiKey, searchYearCd, siDo, guGun, type, numOfRows, pageNo
+        // ✅ 서울특별시 구군 코드 리스트
+        Map<String, String> guGunMap = Map.ofEntries(
+                Map.entry("강남구", "680"),
+                Map.entry("강동구", "740"),
+                Map.entry("강북구", "305"),
+                Map.entry("강서구", "500"),
+                Map.entry("관악구", "620"),
+                Map.entry("광진구", "215"),
+                Map.entry("구로구", "530"),
+                Map.entry("금천구", "545"),
+                Map.entry("노원구", "350"),
+                Map.entry("도봉구", "320"),
+                Map.entry("동대문구", "230"),
+                Map.entry("동작구", "590"),
+                Map.entry("마포구", "440"),
+                Map.entry("서대문구", "410"),
+                Map.entry("서초구", "650"),
+                Map.entry("성동구", "200"),
+                Map.entry("성북구", "290"),
+                Map.entry("송파구", "710"),
+                Map.entry("양천구", "470"),
+                Map.entry("영등포구", "560"),
+                Map.entry("용산구", "170"),
+                Map.entry("은평구", "380"),
+                Map.entry("종로구", "110"),
+                Map.entry("중구", "140"),
+                Map.entry("중랑구", "260") // 빠진 코드도 추가
         );
-        log.info("apiParam = {}", apiParam);
 
-        // ✅ 네트워크 호출
-        String json = NetworkUtil.get(IWarnService.apiURL + apiParam);
-        log.debug("raw json length = {}", (json != null ? json.length() : 0));
+        List<DangerousPointDTO> totalList = new ArrayList<>();
 
-        // ✅ JsonNode로 안전하게 파싱 (기존 LinkedHashMap cast → 예외 위험감소)
-        JsonNode root = om.readTree(json);
-        JsonNode items = root.path("items").path("item"); // 없으면 MissingNode 반환
+        for (Map.Entry<String, String> entry : guGunMap.entrySet()) {
+            String guName = entry.getKey();
+            String guGun = entry.getValue();
 
-        List<DangerousPointDTO> pList = new ArrayList<>();
+            String apiParam = String.format(
+                    "?ServiceKey=%s&searchYearCd=%s&siDo=%s&guGun=%s&type=%s&numOfRows=%s&pageNo=%s",
+                    apiKey, searchYearCd, siDo, guGun, type, numOfRows, pageNo
+            );
+            log.info("API 호출 [{} - {}] : {}", guName, guGun, apiParam);
 
-        // ✅ items가 배열/단일객체 상황 모두 처리
-        if (items.isArray()) {
-            for (JsonNode it : items) {
-                DangerousPointDTO dto = toDTO(it); // 🔁 파싱 공통화
-                if (dto != null) pList.add(dto);
+            String json = NetworkUtil.get(IWarnService.apiURL + apiParam);
+            JsonNode root = om.readTree(json);
+            JsonNode items = root.path("items").path("item");
+
+            if (items.isArray()) {
+                for (JsonNode it : items) {
+                    DangerousPointDTO dto = toDTO(it);
+                    if (dto != null) totalList.add(dto);
+                }
+            } else if (!items.isMissingNode()) {
+                DangerousPointDTO dto = toDTO(items);
+                if (dto != null) totalList.add(dto);
+            } else {
+                log.warn("No items found for {}", guName);
             }
-        } else if (!items.isMissingNode()) {
-            DangerousPointDTO dto = toDTO(items);
-            if (dto != null) pList.add(dto);
-        } else {
-            log.warn("No items found in API response.");
         }
 
-        // ✅ DB에 배치 upsert (성능↑, 중복 방지). 컨트롤러에서 조회만 원하면 이 줄을 빼면 됨.
-        if (!pList.isEmpty()) {
-            warnMapper.insertList(pList);
-            log.info("saved {} rows into warn_spot (upsert)", pList.size());
+        // ✅ DB 저장 (upsert)
+        if (!totalList.isEmpty()) {
+            warnMapper.insertList(totalList);
+            log.info("saved {} rows into warn_spot (upsert)", totalList.size());
         }
 
-        // ✅ 응답 DTO 구성 (기존과 동일)
         DangerousDTO dDTO = new DangerousDTO();
-        dDTO.setPointsList(pList);
+        dDTO.setPointsList(totalList);
 
         log.info("WarnService.getDangerous END");
         return dDTO;
     }
+
 
     /**
      * JsonNode 1건을 안전하게 DTO로 변환하고, src_hash를 채움.
