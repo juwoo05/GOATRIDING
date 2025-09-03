@@ -1,4 +1,7 @@
-/* Kakao Maps 기반 내비 + RG 다크 UI + 위험구간 색분할 오버레이 (경로찾기 즉시 반영 버전) */
+/* Kakao Maps 기반 내비 + RG 다크 UI + 위험구간 색분할 오버레이 (경로찾기 즉시 반영 버전)
+   - 경로 포함 지점만 표시: SHOW_ONLY_ROUTE_HAZARDS=true
+   - 말풍선(타이틀/배지) 색상 = riskColorOf(사고건수 규칙)과 동기화
+*/
 
 /* ───────────────────────────── 기본 상수/상태 ───────────────────────────── */
 const SEOUL_CITY_HALL = { lat: 37.5665, lng: 126.9780 };
@@ -24,6 +27,10 @@ let placesService = null;         // 별칭
 
 // 지도를 자동으로 따라갈지 여부
 let followUser = false;
+
+// ★ 경로 포함 지점만 보여줄지 여부 + 버퍼(m)
+const SHOW_ONLY_ROUTE_HAZARDS = true;
+const ROUTE_HAZARD_BUFFER_M = 10;
 
 /* ───────────────────────────── SDK 로드/초기화 ───────────────────────────── */
 if (window.kakao && kakao.maps && kakao.maps.load) {
@@ -79,9 +86,12 @@ function _esc(s){ return String(s == null ? '' : s).replace(/[&<>\"']/g, m => ({
 
 function isFiniteNumber(v){ v = Number(v); return Number.isFinite(v); }
 
+// ✅ 사고 건수 → 위험레벨: 6+ high, 5 medium, 4- low
 function riskLevelFromIncidents(inc) {
     const n = Number(inc) || 0;
-    return n > 3 ? 'high' : (n === 3 ? 'medium' : 'low');
+    if (n >= 6) return 'high';
+    if (n === 5) return 'medium';
+    return 'low';
 }
 
 function riskColorOf(level) {
@@ -99,8 +109,12 @@ function smallDotMarkerImage(color, size=12) {
 }
 function metersBetween(lat1,lng1,lat2,lng2){
     const R=6371000, toRad=d=>d*Math.PI/180;
-    const dLat=toRad(lat2-lat1), dLng=toRad(lng2-lng1);
-    const a=Math.sin(dLat/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLng/2)**2;
+    const dLat=toRad(lat2-lat1), dLng=toRad(lat2-lng1?lng1:lng1); // no-op guard
+    const dLng2=toRad(lat2?lng2:lng2); /* keep structure */
+    const dLat2=toRad(lat2-lat1);
+    // 원본 수식
+    const dLatX=toRad(lat2-lat1), dLngX=toRad(lng2-lng1);
+    const a=Math.sin(dLatX/2)**2 + Math.cos(toRad(lat1))*Math.cos(toRad(lat2))*Math.sin(dLngX/2)**2;
     return 2*R*Math.asin(Math.sqrt(a));
 }
 function normalizeDangerAreas(arr){
@@ -109,7 +123,7 @@ function normalizeDangerAreas(arr){
         const lat = [d.lat,d.latitude,d.Lat,d.LAT,d.y].find(isFiniteNumber);
         const lng = [d.lng,d.long,d.longitude,d.Lng,d.LNG,d.x].find(isFiniteNumber);
         const incidents = [d.incidents,d.accidentCount,d.accidents,d.cnt,d.count].find(v=>v!=null);
-        const risk = d.riskLevel || riskLevelFromIncidents(incidents);
+        const risk = riskLevelFromIncidents(incidents); // 서버 riskLevel 무시하고 재계산
         return {
             id: d.id || d.uid || ((d.name||'지점')+'@'+lat+','+lng),
             name: d.name || d.title || d.placeName || d.road_name || '지점',
@@ -122,7 +136,11 @@ function normalizeDangerAreas(arr){
 }
 
 /* ───────────────────────────── 위험지역 마커 렌더 ───────────────────────────── */
-function showHotspotOverlay(map, lat, lng, name, description, incidents){
+// 🔄 말풍선 색상을 위험레벨에 맞춰 동적으로 적용
+function showHotspotOverlay(map, lat, lng, name, description, incidents, riskLevel){
+    const level = (riskLevel && String(riskLevel).toLowerCase()) || riskLevelFromIncidents(incidents);
+    const color = riskColorOf(level);
+
     const s = String(description || '');
     const i = s.indexOf('사고건수');
     const cleanDesc = i > -1 ? s.slice(0, i).replace(/[|•]\s*$/,'').trim() : s;
@@ -130,10 +148,10 @@ function showHotspotOverlay(map, lat, lng, name, description, incidents){
     const wrap = document.createElement('div');
     wrap.className = 'rg-hotspot';
     wrap.innerHTML = `
-    <div class="rg-title">${_esc(name)}</div>
+    <div class="rg-title" style="background:${color}">${_esc(name)}</div>
     <div class="rg-body">
       ${cleanDesc ? `<span>${_esc(cleanDesc)}</span>` : ''}
-      ${Number.isFinite(incidents) ? `<span class="rg-badge">사고건수 ${incidents}</span>` : ''}
+      ${Number.isFinite(incidents) ? `<span class="rg-badge" style="background:${color}">사고건수 ${incidents}</span>` : ''}
     </div>`;
     return new kakao.maps.CustomOverlay({
         position: new kakao.maps.LatLng(lat, lng),
@@ -152,19 +170,29 @@ function updateDangerousAreaMarkers() {
     // 데이터(정규화)
     const src = normalizeDangerAreas(window.dangerousAreas || []);
     const listEl = document.getElementById('dangerousAreaList');
+
     if (!src.length){
         if (listEl) listEl.innerHTML = '<div class="text-sm text-gray-400">데이터 없음</div>';
-        // 카운트/재색칠
         setDangerCount?.(0);
         if (routePolyline) drawColoredRoute(routePolyline.getPath());
         return;
     }
 
-    // 현재 중심 반경 내(3km)
-    const center = map.getCenter();
-    const RADIUS_M = 3000;
-    let filtered = src.filter(a => metersBetween(center.getLat(),center.getLng(), a.lat,a.lng) <= RADIUS_M);
-    if (!filtered.length) filtered = src.slice(0, Math.min(20, src.length));
+    // ★ 경로 포함 필터 우선 적용
+    let dataset = hazardsNearRouteOnly(src);
+
+    // 경로가 없거나, 경로 필터가 꺼져있으면 지도 중심 반경으로 대체
+    let filtered;
+    const path = (routePolyline && routePolyline.getPath) ? routePolyline.getPath() : null;
+    if (SHOW_ONLY_ROUTE_HAZARDS && path && path.length >= 2) {
+        filtered = dataset;
+    } else {
+        const center = map.getCenter();
+        const RADIUS_M = 3000;
+        filtered = dataset.filter(a => metersBetween(center.getLat(),center.getLng(), a.lat,a.lng) <= RADIUS_M);
+        if (!filtered.length) filtered = dataset.slice(0, Math.min(20, dataset.length));
+    }
+
     if (listEl) listEl.innerHTML = '';
 
     const bounds = new kakao.maps.LatLngBounds();
@@ -180,7 +208,8 @@ function updateDangerousAreaMarkers() {
         dangerousAreaMarkers.push(marker);
         bounds.extend(pos);
 
-        const overlay = showHotspotOverlay(map, a.lat, a.lng, a.name, a.description, a.incidents);
+        // ✅ riskLevel 전달하여 말풍선 색 동기화
+        const overlay = showHotspotOverlay(map, a.lat, a.lng, a.name, a.description, a.incidents, a.riskLevel);
         dangerousAreaOverlays.push(overlay);
 
         kakao.maps.event.addListener(marker, 'click', ()=>{
@@ -233,6 +262,10 @@ window.loadDangerousAreasFromDb = async function (radiusM=3000, limit=300) {
 
         const data = await res.json();
         window.dangerousAreas = normalizeDangerAreas(data);
+
+        // ★ 경로가 있으면 경로 인접만 유지
+        applyRouteHazardFilter();
+
         updateDangerousAreaMarkers();
         if (routePolyline) drawColoredRoute(routePolyline.getPath());
     } catch (e) {
@@ -257,6 +290,10 @@ async function loadDangerousAreasAt(lat, lng, radiusM = 1200, limit = 200) {
     const data = await res.json();
     const norm = normalizeDangerAreas(data);
     window.dangerousAreas = mergeAreas(window.dangerousAreas || [], norm);
+
+    // ★ 경로가 있으면 경로 인접만 유지
+    applyRouteHazardFilter();
+
     return norm;
 }
 // Polyline path를 따라 일정 간격으로 서버 다건 조회 후 합치기
@@ -444,8 +481,9 @@ async function drawRoute(route){
             const fallback = [ new kakao.maps.LatLng(start.lat,start.lng), new kakao.maps.LatLng(end.lat,end.lng) ];
             drawPath(fallback);
 
-            // ★ 경로가 직선이라도 경로를 따라 위험지역 프리로드 후 색칠
+            // ★ 경로가 직선이라도 프리로드 → 경로 필터 → 색칠
             await preloadHazardsAlongRoute(fallback);
+            applyRouteHazardFilter();
             drawColoredRoute(fallback);
 
             alert('경로를 찾지 못해 직선 경로를 표시합니다.');
@@ -460,6 +498,7 @@ async function drawRoute(route){
             const fallback = [ new kakao.maps.LatLng(start.lat,start.lng), new kakao.maps.LatLng(end.lat,end.lng) ];
             drawPath(fallback);
             await preloadHazardsAlongRoute(fallback);
+            applyRouteHazardFilter();
             drawColoredRoute(fallback);
             return;
         }
@@ -467,8 +506,11 @@ async function drawRoute(route){
         // ① 기본(초록) 경로 먼저 그리기
         drawPath(path);
 
-        // ② ★ 경로를 따라 위험지역들을 미리 로딩
+        // ② 경로를 따라 위험지역 미리 로딩
         await preloadHazardsAlongRoute(path);
+
+        // ★ 경로 포함 지점만 남김
+        applyRouteHazardFilter();
 
         // ③ 위험구간 오버레이(주황/빨강) 즉시 반영
         drawColoredRoute(path);
@@ -513,6 +555,25 @@ function distanceToPolylineMeters(lat, lng, path) {
     }
     return min;
 }
+
+/* ───────────────────────────── 경로 포함 필터 유틸 ───────────────────────────── */
+function routeRadiusForZone(z) {
+    const rad = RISK_RADIUS[(z.riskLevel || 'low').toLowerCase()] || RISK_RADIUS.low;
+    return rad + ROUTE_HAZARD_BUFFER_M; // 위험반경 + 여유
+}
+function hazardsNearRouteOnly(list) {
+    if (!SHOW_ONLY_ROUTE_HAZARDS) return list;
+    if (!routePolyline || !routePolyline.getPath) return list;
+    const path = routePolyline.getPath();
+    if (!path || path.length < 2) return list;
+    return list.filter(z => distanceToPolylineMeters(z.lat, z.lng, path) <= routeRadiusForZone(z));
+}
+function applyRouteHazardFilter() {
+    if (!Array.isArray(window.dangerousAreas)) return;
+    window.dangerousAreas = hazardsNearRouteOnly(window.dangerousAreas);
+}
+
+/* ───────────────────────────── 경로 이탈 감지 계속 ───────────────────────────── */
 function startNavigationWatch() {
     if (!routePolyline) return;
     const path = routePolyline.getPath();
@@ -749,7 +810,7 @@ function bindPlaceSearch() {
             setStartMarker(start);
             setEndMarker(end);
 
-            // ★ 경로찾기 → drawRoute 내부에서 프리로드 + 색칠 수행
+            // ★ 경로찾기 → drawRoute 내부에서 프리로드 + 경로필터 + 색칠 수행
             await drawRoute({ start, end });
         } catch (err) {
             alert('출발지/도착지 해석 실패: ' + err.message);
@@ -821,7 +882,7 @@ function bindAutocomplete(selector) {
             const btn = document.createElement('button');
             btn.type = 'button';
             btn.className = 'w-full text-left px-3 py-2 hover:bg-gray-100';
-            btn.innerHTML = `<div class="text-sm">${it.name}</div>${it.desc ? `<div className="text-xs text-gray-500">${it.desc}</div>` : ''}`;
+            btn.innerHTML = `<div class="text-sm">${it.name}</div>${it.desc ? `<div class="text-xs text-gray-500">${it.desc}</div>` : ''}`;
             btn.addEventListener('click', ()=>{
                 input.value = it.name;
                 input.dataset.lat = it.lat; input.dataset.lng = it.lng;
@@ -895,7 +956,7 @@ function rgIcon(name, size=20){
         gps:'M12 2a10 10 0 1 0 10 10A10 10 0 0 0 12 2Zm1 5v5l4 2',
         center:'M12 7a5 5 0 1 1-5 5 5 5 0 0 1 5-5Zm0-7v3M12 21v3M0 12h3M21 12h3',
         bike:'M5 16a3 3 0 1 0 3 3 3 3 0 0 0-3-3Zm11 0a3 3 0 1 0 3 3 3 3 0 0 0-3-3Zm-6-6h3l3 6h-3m-3-6-2 6h3',
-        kakao:'M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-5 5v-5H4a2 2 0 0 1-2-2V6a2 2 0 0 1 2-2z',
+        kakao:'M4 4h16a2 2 0 0 1 2 2v9a2 2 0 0 1-2 2h-7l-5 5v-5H4a2 2 0 0 1 2-2z',
     }[name] || '';
     return `<svg width="${size}" height="${size}" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="${path}"/></svg>`;
 }
@@ -960,7 +1021,5 @@ function mountMapUI(){
 }
 
 /* ───────────────────────────── 위험 알림(선택사항용 훅) ───────────────────────────── */
-/* 아래 두 함수는 상단에서 호출해주는 형태로 남겨두었음.
-   구현이 이미 있다면 그대로 사용하고, 없으면 no-op로 둬도 동작에 문제 없음. */
 function ensureFreshHazards(/* lat, lng, path */){ /* 필요 시 주기 기반 갱신 로직 구현 */ }
 function checkAndNotifyHazard(/* lat, lng, path */){ /* 필요 시 칩/음성 알림 구현 */ }

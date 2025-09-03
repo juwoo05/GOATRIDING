@@ -4,10 +4,10 @@
 <mapper namespace="kopo.poly.mapper.INoticeMapper">
 
     <select id="getNoticeList" resultType="NoticeDTO">
-        SELECT N.NOTICE_SEQ, N.TITLE, N.NOTICE_YN, N.READ_CNT, N.USER_ID,
-               TO_CHAR(N.REG_DT, 'YYYY-MM-DD') AS REG_DT
-        FROM NOTICE N
-        ORDER BY N.NOTICE_YN, N.REG_DT DESC
+        SELECT C.NOTICE_SEQ, C.TITLE, C.NOTICE_YN, C.READ_CNT, C.USER_ID,
+               TO_CHAR(C.REG_DT, 'YYYY-MM-DD') AS REG_DT
+        FROM COMMUNITY C
+        ORDER BY N.REG_DT DESC
     </select>
 
     <insert id="insertNoticeInfo" parameterType="NoticeDTO">

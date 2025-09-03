@@ -184,18 +184,18 @@
 		<div class="menu">
 			<a href="/map/map">Dangerous Map</a>
 			<a href="/rank/ranking">Ranking</a>
-			<a href="/notice/noticeList">Community</a>
+			<a href="/community/community">Community</a>
 		</div>
 		<div class="auth-buttons">
 			<% if (ssUserId.equals("")) { %>
 			<!-- 로그인 안됨 -->
-			<a href="/user/login" class="auth-link">Login</a>
-			<a href="/user/userRegForm" class="auth-link">Sign Up</a>
-			<% } else { %>
-			<!-- 로그인됨 -->
-			<a href="/user/myPage" class="auth-link"><%= ssUserName %></a>
-			<a href="/user/logout" class="auth-link">Logout</a>
-			<% } %>
+		<a href="/user/login" class="auth-link">Login</a>
+		<a href="/user/userRegForm" class="auth-link">Sign Up</a>
+		<% } else { %>
+		<!-- 로그인됨 -->
+		<a href="/user/myPage" class="auth-link"><%= ssUserName %></a>
+		<a href="/user/logout" class="auth-link">Logout</a>
+		<% } %>
 		</div>
 
 	</div>
@@ -219,7 +219,7 @@
 			<div class="label">Ranking</div>
 		</div>
 		<div>
-			<div class="circle-link link-community" onclick="location.href='/notice/noticeList'">
+			<div class="circle-link link-community" onclick="location.href='/community/community'">
 				<img src="/images/community-thumbnail.png" alt="Community" />
 			</div>
 			<div class="label">Community</div>

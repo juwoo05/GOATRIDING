@@ -28,8 +28,7 @@ public class NoticeController {
     private final INoticeService noticeService;
 
     @GetMapping(value = "noticeList")
-    public String noticeList(HttpSession session, ModelMap model)
-            throws Exception {
+    public String noticeList(HttpSession session, ModelMap model) throws Exception {
 
         log.info("{}.noticeList Start!", this.getClass().getName());
 
