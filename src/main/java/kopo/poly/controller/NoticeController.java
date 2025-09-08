@@ -85,6 +85,7 @@ public class NoticeController {
 
             msg = "실패하였습니다. : " + e.getMessage();
             log.info(e.toString());
+
         } finally {
             dto = new MsgDTO();
             dto.setMsg(msg);

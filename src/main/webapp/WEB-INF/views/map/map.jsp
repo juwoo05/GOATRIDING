@@ -98,7 +98,7 @@
         <div class="menu">
             <a href="${ctx}/map/map">Dangerous Map</a>
             <a href="${ctx}/ranking">Ranking</a>
-            <a href="${ctx}/community">Community</a>
+            <a href="${ctx}/community/community">Community</a>
         </div>
         <div class="auth-buttons">
             <a href="${ctx}/user/login" class="auth-link">Login</a>

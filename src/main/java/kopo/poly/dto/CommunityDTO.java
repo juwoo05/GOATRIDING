@@ -3,6 +3,8 @@ package kopo.poly.dto;
 import lombok.Getter;
 import lombok.Setter;
 
+import java.util.Date;
+
 @Getter
 @Setter
 public class CommunityDTO {
@@ -11,8 +13,15 @@ public class CommunityDTO {
 
     private String contents;
 
-    private String readCnt;
+    private int likes;
 
-    private String chgDt;
+    private Date chgDt;
+
+    private String timeDiff;
+
+    private String communityId;
+
+    // ✅ 현재 로그인 유저 기준으로 이 글을 좋아요 눌렀는지
+    private boolean liked; // <-- 추가
 
 }
