@@ -1,0 +1,104 @@
+<!-- resources/mappers/IGroupRideMapper.xml -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kopo.poly.mapper.IGroupRideMapper">
+
+    <select id="selectGroupRides" parameterType="kopo.poly.dto.GroupRideListReqDTO"
+            resultType="kopo.poly.dto.GroupRideDTO">
+        SELECT
+        gr.ID            AS id,
+        gr.TITLE         AS title,
+        gr.ORGANIZER_ID  AS organizerId,
+        gr.ORGANIZER_NAME AS organizerName,
+        gr.DATE          AS date,
+        gr.TIME          AS time,
+        gr.LOCATION      AS location,
+        gr.DISTANCE      AS distance,
+        gr.MAX_PARTICIPANTS AS maxParticipants,
+        gr.DIFFICULTY    AS difficulty
+        FROM GROUP_RIDE gr
+        <where>
+            <if test="difficulty != null and difficulty != ''">
+                AND gr.DIFFICULTY = #{difficulty}
+            </if>
+        </where>
+        ORDER BY gr.CREATED_AT DESC
+        <if test="page != null and size != null">
+            LIMIT #{size} OFFSET ${(page-1) * size}
+        </if>
+    </select>
+
+    <select id="countGroupRides" parameterType="kopo.poly.dto.GroupRideListReqDTO" resultType="long">
+        SELECT COUNT(1)
+        FROM GROUP_RIDE gr
+        <where>
+            <if test="difficulty != null and difficulty != ''">
+                AND gr.DIFFICULTY = #{difficulty}
+            </if>
+        </where>
+    </select>
+
+    <select id="selectGroupRideById" parameterType="kopo.poly.dto.GroupRideDTO"
+            resultType="kopo.poly.dto.GroupRideDTO">
+        SELECT
+            gr.ID            AS id,
+            gr.TITLE         AS title,
+            gr.ORGANIZER_ID  AS organizerId,
+            gr.ORGANIZER_NAME AS organizerName,
+            gr.DATE          AS date,
+            gr.TIME          AS time,
+            gr.LOCATION      AS location,
+            gr.DISTANCE      AS distance,
+            gr.MAX_PARTICIPANTS AS maxParticipants,
+            gr.DIFFICULTY    AS difficulty
+        FROM GROUP_RIDE gr
+        WHERE gr.ID = #{id}
+    </select>
+
+    <insert id="insertGroupRide" parameterType="kopo.poly.dto.GroupRideDTO" useGeneratedKeys="true" keyProperty="id">
+        INSERT INTO GROUP_RIDE
+        (TITLE, ORGANIZER_ID, ORGANIZER_NAME, DATE, TIME, LOCATION, DISTANCE, MAX_PARTICIPANTS, DIFFICULTY)
+        VALUES
+            (#{title}, #{organizerId}, #{organizerName}, #{date}, #{time}, #{location}, #{distance}, #{maxParticipants}, #{difficulty})
+    </insert>
+
+    <insert id="insertJoin" parameterType="kopo.poly.dto.GroupRideJoinDTO">
+        INSERT INTO GROUP_RIDE_JOIN (GROUP_RIDE_ID, USER_ID)
+        VALUES (#{groupRideId}, #{userId})
+    </insert>
+
+    <delete id="deleteJoin" parameterType="kopo.poly.dto.GroupRideJoinDTO">
+        DELETE FROM GROUP_RIDE_JOIN
+        WHERE GROUP_RIDE_ID = #{groupRideId}
+          AND USER_ID = #{userId}
+    </delete>
+
+    <select id="countJoinedByRide" parameterType="kopo.poly.dto.GroupRideJoinDTO" resultType="int">
+        SELECT COUNT(1)
+        FROM GROUP_RIDE_JOIN
+        WHERE GROUP_RIDE_ID = #{groupRideId}
+    </select>
+
+    <select id="existsJoin" parameterType="kopo.poly.dto.GroupRideJoinDTO" resultType="int">
+        SELECT COUNT(1)
+        FROM GROUP_RIDE_JOIN
+        WHERE GROUP_RIDE_ID = #{groupRideId}
+          AND USER_ID = #{userId}
+            LIMIT 1
+    </select>
+
+    <!-- 참여자 목록: GROUP_RIDE_JOIN ⟷ USER_INFO -->
+    <select id="selectMembersByRide"
+            parameterType="kopo.poly.dto.GroupRideJoinDTO"
+            resultType="kopo.poly.dto.UserMyPageDTO">
+        SELECT
+            u.USER_ID       AS userId,
+            u.USER_NAME     AS userName,
+            u.PROFILE_IMAGE AS profileImage
+        FROM GROUP_RIDE_JOIN j
+                 JOIN USER_INFO u ON u.USER_ID = j.USER_ID
+        WHERE j.GROUP_RIDE_ID = #{groupRideId}
+        ORDER BY u.USER_NAME
+    </select>
+
+</mapper>

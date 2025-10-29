@@ -1,33 +1,72 @@
-<?xml version="1.0" encoding="UTF-8" ?>
-<!DOCTYPE mapper
-        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
-        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="kopo.poly.mapper.IRankingMapper">
 
-    <select id="getUserByName" resultType="kopo.poly.dto.UserDTO">
-        SELECT * FROM USER_RANK WHERE user_name = #{name}
+    <select id="getUserById" resultType="kopo.poly.dto.UserDTO">
+        SELECT id AS id, user_id AS userId, user_name AS userName,
+               points AS points, distance AS distance, carbon_saved AS carbonSaved,
+               created_at AS createdAt, level AS level, achievements AS achievements
+        FROM USER_RANK
+        WHERE user_id = #{userId}
+            LIMIT 1
     </select>
 
-    <insert id="insertUser">
-        INSERT INTO USER_RANK(user_name, points, distance, carbon_saved)
-        VALUES(#{name}, #{points}, #{distance}, #{carbonSaved})
+    <select id="getUserByName" resultType="kopo.poly.dto.UserDTO">
+        SELECT id AS id, user_id AS userId, user_name AS userName,
+               points AS points, distance AS distance, carbon_saved AS carbonSaved,
+               created_at AS createdAt, level AS level, achievements AS achievements
+        FROM USER_RANK
+        WHERE user_name = #{name}
+            LIMIT 1
+    </select>
+
+    <insert id="insertUser" parameterType="kopo.poly.dto.UserDTO">
+        INSERT INTO USER_RANK (USER_ID, USER_NAME, POINTS, DISTANCE, CARBON_SAVED, LEVEL, ACHIEVEMENTS, CREATED_AT)
+        VALUES (#{userId}, #{userName}, 0, 0, 0, 1, 0, NOW())
     </insert>
 
+    <!-- ⭐ user_id 기준으로 누적 -->
     <update id="updateScore" parameterType="kopo.poly.dto.UserDTO">
         UPDATE USER_RANK
-        SET points = points + #{points},
-            distance = distance + #{distance}
+        SET
+            points       = points + #{points},
+            distance     = distance + #{distance},
             carbon_saved = carbon_saved + #{carbonSaved}
-        WHERE user_name = #{name}
+        WHERE user_id = #{userId}
     </update>
 
-    <select id="getTop5" resultType="kopo.poly.dto.UserDTO">
-        SELECT * FROM USER_RANK ORDER BY points DESC LIMIT 5
+    <select id="getTop3" resultType="kopo.poly.dto.UserDTO">
+        SELECT id, user_id AS userId, user_name AS userName,
+               points, distance, carbon_saved AS carbonSaved,
+               created_at AS createdAt, level, achievements
+        FROM USER_RANK
+        ORDER BY distance DESC, points DESC
+            LIMIT 3
     </select>
 
-    <update id="resetWeekly">
-        UPDATE USER_RANK SET points = 0
-    </update>
+    <select id="getTop5" resultType="kopo.poly.dto.UserDTO">
+        SELECT id, user_id AS userId, user_name AS userName,
+               points, distance, carbon_saved AS carbonSaved,
+               created_at AS createdAt, level, achievements
+        FROM USER_RANK
+        ORDER BY distance DESC, points DESC
+            LIMIT 5
+    </select>
+
+    <select id="getAllRanking" resultType="kopo.poly.dto.UserDTO">
+        SELECT id, user_id AS userId, user_name AS userName,
+               points, distance, carbon_saved AS carbonSaved,
+               created_at AS createdAt, level, achievements
+        FROM USER_RANK
+        ORDER BY distance DESC, points DESC
+    </select>
+
+    <select id="getAchievementCount" resultType="int">
+        SELECT COUNT(*) FROM USER_ACHIEVEMENT WHERE USER_ID = #{userId}
+    </select>
+
+    <select id="getChallengeCount" resultType="int">
+        SELECT COUNT(*) FROM USER_CHALLENGE WHERE USER_ID = #{userId} AND COMPLETED = TRUE
+    </select>
 
 </mapper>

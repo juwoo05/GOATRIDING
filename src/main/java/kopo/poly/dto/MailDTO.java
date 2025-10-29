@@ -12,4 +12,6 @@ public class MailDTO {
     String toMail;
     String title;
     String contents;
+    String chgDt;
+    int mailSeq;
 }

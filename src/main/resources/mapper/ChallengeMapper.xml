@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.poly.mapper.IChallengeMapper">
+
+    <!-- 특정 유저의 도전 과제 진행 상황 조회 -->
+    <select id="getUserChallenges" resultType="kopo.poly.dto.UserChallengeView">
+        SELECT
+            c.ID AS challengeId,
+            c.TITLE AS challengeType,
+            c.GOAL_VALUE AS targetValue,
+            COALESCE(uc.PROGRESS_VALUE, 0) AS progressValue,  -- ✅ NULL 방지
+            CASE
+                WHEN uc.COMPLETED = 1 THEN 1
+                ELSE 0
+                END AS completed
+        FROM CHALLENGE c
+                 LEFT JOIN USER_CHALLENGE uc
+                           ON c.ID = uc.CHALLENGE_ID
+                               AND uc.USER_ID = #{userId}
+        WHERE c.PERIOD_TYPE = 'WEEKLY'
+    </select>
+
+</mapper>

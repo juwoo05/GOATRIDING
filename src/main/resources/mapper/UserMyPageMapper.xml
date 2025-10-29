@@ -1,0 +1,68 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.poly.mapper.IUserMyPageMapper">
+
+    <!-- USER_INFO + USER_RANK JOIN 결과를 UserMyPageDTO로 매핑 -->
+    <resultMap id="UserMyPageMap" type="kopo.poly.dto.UserMyPageDTO">
+        <!-- USER_INFO -->
+        <result property="userId"       column="USER_ID"/>
+        <result property="userName"     column="USER_NAME"/>
+        <result property="email"        column="EMAIL"/>
+        <result property="profileImage" column="PROFILE_IMAGE"/>
+        <result property="regDt"        column="REG_DT"/>
+        <result property="chgDt"        column="CHG_DT"/>
+
+        <!-- USER_RANK -->
+        <result property="points"       column="POINTS"/>
+        <result property="distance"     column="DISTANCE"/>
+        <result property="carbonSaved"  column="CARBON_SAVED"/>
+        <result property="level"        column="LEVEL"/>
+        <result property="achievements" column="ACHIEVEMENTS"/>
+        <result property="challenges"   column="CHALLENGES"/>
+        <result property="avatar"       column="AVATAR"/>
+        <result property="createdAt"    column="CREATED_AT"/>
+    </resultMap>
+
+    <!-- 조회: USER_INFO 좌측 기준 -->
+    <select id="getMyPage" parameterType="string" resultMap="UserMyPageMap">
+        SELECT
+            ui.USER_ID,
+            ui.USER_NAME,
+            ui.EMAIL,
+            ui.PROFILE_IMAGE,
+            DATE_FORMAT(ui.REG_DT, '%Y-%m-%d %H:%i:%s') AS REG_DT,
+            DATE_FORMAT(ui.CHG_DT, '%Y-%m-%d %H:%i:%s') AS CHG_DT,
+            ur.POINTS,
+            ur.DISTANCE,
+            ur.CARBON_SAVED,
+            ur.LEVEL,
+            ur.ACHIEVEMENTS,
+            ur.CHALLENGES,
+            ur.AVATAR,
+            DATE_FORMAT(ur.CREATED_AT, '%Y-%m-%d %H:%i:%s') AS CREATED_AT
+        FROM USER_INFO ui
+                 LEFT JOIN USER_RANK ur
+                           ON ur.USER_ID = ui.USER_ID
+        WHERE ui.USER_ID = #{userId}
+            LIMIT 1
+    </select>
+
+    <!-- 닉네임 변경 -->
+    <update id="updateUserName" parameterType="kopo.poly.dto.UserMyPageDTO">
+        UPDATE USER_INFO
+        SET USER_NAME = #{userName},
+            CHG_DT    = NOW()
+        WHERE USER_ID   = #{userId}
+    </update>
+
+    <!-- 프로필 이미지 변경 -->
+    <update id="updateProfileImage" parameterType="kopo.poly.dto.UserMyPageDTO">
+        UPDATE USER_INFO
+        SET PROFILE_IMAGE = #{profileImage},
+            CHG_DT        = NOW()
+        WHERE USER_ID       = #{userId}
+    </update>
+
+</mapper>

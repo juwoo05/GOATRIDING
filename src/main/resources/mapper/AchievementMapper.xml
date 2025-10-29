@@ -1,0 +1,51 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.poly.mapper.IAchievementMapper">
+
+    <!-- 특정 유저의 업적 조회 -->
+    <select id="selectUserAchievements" resultType="kopo.poly.dto.UserAchievementView">
+        SELECT
+            a.ID,
+            a.TITLE,
+            a.DESCRIPTION,
+            a.ICON,
+            a.RARITY,
+            ua.PROGRESS AS progress,
+            ua.TARGET AS target,
+            CASE
+                WHEN ua.PROGRESS IS NOT NULL
+                    AND ua.TARGET IS NOT NULL
+                    AND ua.PROGRESS >= ua.TARGET
+                    THEN 1
+                ELSE 0
+                END AS unlocked,
+            ua.ACHIEVED_AT AS unlockedAt
+        FROM ACHIEVEMENT a
+                 LEFT JOIN USER_ACHIEVEMENT ua
+                           ON a.ID = ua.ACHIEVEMENT_ID
+                               AND ua.USER_ID = #{userId}
+    </select>
+
+    <!-- 모든 업적 조회 (회원가입 초기화용) -->
+    <select id="getAllAchievements" resultType="kopo.poly.dto.UserAchievementView">
+        SELECT
+            ID,
+            TITLE,
+            DESCRIPTION,
+            ICON,
+            RARITY,
+            TARGET
+        FROM ACHIEVEMENT
+        ORDER BY ID ASC
+    </select>
+
+    <!-- 유저 업적 insert (회원가입 시 초기화) -->
+    <insert id="insertUserAchievement">
+        INSERT INTO USER_ACHIEVEMENT (user_id, achievement_id, progress, target, achieved_at)
+        VALUES (#{userId}, #{achievementId}, #{progress}, #{target}, NULL)
+    </insert>
+
+</mapper>

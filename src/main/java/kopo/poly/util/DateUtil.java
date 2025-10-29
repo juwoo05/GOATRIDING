@@ -28,7 +28,6 @@ public class DateUtil {
         } else if ((diffTime /= TIME_MAXIMUM.MIN) < TIME_MAXIMUM.HOUR) {
             // hour
             msg = (diffTime) + "시간 전";
-            log.info("체크: {}", msg);
         } else if ((diffTime /= TIME_MAXIMUM.HOUR) < TIME_MAXIMUM.DAY) {
             // day
             msg = (diffTime) + "일 전";

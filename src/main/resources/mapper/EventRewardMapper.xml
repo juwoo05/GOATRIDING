@@ -1,0 +1,63 @@
+<!-- resources/mappers/IEventRewardMapper.xml -->
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kopo.poly.mapper.IEventRewardMapper">
+
+    <select id="selectItems" resultType="kopo.poly.dto.EventItemDTO">
+        SELECT
+            ID AS id, NAME AS name, DESCRIPTION AS description,
+            POINTS_COST AS pointsCost, CATEGORY AS category, IMAGE AS image,
+            STOCK AS stock, POPULAR AS popular, TIME_LIMIT AS timeLimit
+        FROM EVENT_REWARD_ITEM
+        ORDER BY POPULAR DESC, ID ASC
+    </select>
+
+    <select id="selectItemById" parameterType="kopo.poly.dto.EventItemDTO"
+            resultType="kopo.poly.dto.EventItemDTO">
+        SELECT
+            ID AS id, NAME AS name, DESCRIPTION AS description,
+            POINTS_COST AS pointsCost, CATEGORY AS category, IMAGE AS image,
+            STOCK AS stock, POPULAR AS popular, TIME_LIMIT AS timeLimit
+        FROM EVENT_REWARD_ITEM
+        WHERE ID = #{id}
+            LIMIT 1
+    </select>
+
+    <update id="decrementStockIfEnough" parameterType="kopo.poly.dto.EventItemDTO">
+        UPDATE EVENT_REWARD_ITEM
+        SET STOCK = STOCK - #{stock}         <!-- stock 필드에 "감소시킬 수량"을 넣어 전달 -->
+        WHERE ID = #{id}
+        AND STOCK >= #{stock}
+    </update>
+
+    <insert id="insertExchangeOne" parameterType="kopo.poly.dto.EventExchangeResDTO" useGeneratedKeys="true" keyProperty="exchangeId">
+        INSERT INTO EVENT_EXCHANGE (USER_ID, ITEM_ID, QTY, USED_POINTS)
+        VALUES (#{userId}, #{exchangedItems[0].itemId}, #{exchangedItems[0].qty}, #{usedPoints})
+    </insert>
+
+    <select id="selectUserPoints" parameterType="kopo.poly.dto.PointsDTO" resultType="kopo.poly.dto.PointsDTO">
+        SELECT USER_ID AS userId, POINTS AS points
+        FROM USER_RANK
+        WHERE USER_ID = #{userId}
+            LIMIT 1
+    </select>
+
+    <update id="decrementPointsIfEnough" parameterType="kopo.poly.dto.PointsDTO">
+        UPDATE USER_RANK
+        SET POINTS = POINTS - #{points}
+        WHERE USER_ID = #{userId}
+          AND POINTS >= #{points}
+    </update>
+
+    <update id="incrementPoints" parameterType="kopo.poly.dto.PointsDTO">
+        UPDATE USER_RANK
+        SET POINTS = POINTS + #{points}
+        WHERE USER_ID = #{userId}
+    </update>
+
+    <update id="addDistance" parameterType="kopo.poly.dto.PointsDTO">
+        UPDATE USER_RANK
+        SET DISTANCE = DISTANCE + #{points}  <!-- points 필드에 증가시킬 거리(km) 넣어 전달 -->
+        WHERE USER_ID = #{userId}
+    </update>
+</mapper>

@@ -1,6 +1,7 @@
 package kopo.poly.controller;
 
 import jakarta.servlet.http.HttpServletRequest;
+import jakarta.servlet.http.HttpSession;
 import kopo.poly.dto.MailDTO;
 import kopo.poly.dto.MsgDTO;
 import kopo.poly.service.IMailService;
@@ -8,10 +9,15 @@ import kopo.poly.util.CmmUtil;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Controller;
+import org.springframework.ui.ModelMap;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PostMapping;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.ResponseBody;
+
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Optional;
 
 @Slf4j
 @RequestMapping(value = "/mail")
@@ -67,4 +73,41 @@ public class MailController {
 
         return dto;
     }
+
+    @GetMapping(value = "mailList")
+    public String noticeList(HttpSession session, ModelMap model) throws Exception {
+
+        log.info("{}.mailList Start!", this.getClass().getName());
+
+        List<MailDTO> rList = Optional.ofNullable(mailService.getMailList())
+                .orElseGet(ArrayList::new);
+
+        model.addAttribute("rList", rList);
+        log.info("씨발롬아{}", rList);
+        log.info(this.getClass().getName() + " mailList End!");
+
+        return "mail/mailList";
+    }
+
+    @GetMapping(value = "mailInfo")
+    public String noticeInfo(HttpServletRequest request, ModelMap model) throws Exception {
+
+        log.info("{}.mailInfo Start!", this.getClass().getName());
+
+        int mailSeq = Integer.parseInt(request.getParameter("mailSeq"));
+
+        log.info("mailSeq 씨발: {}", mailSeq);
+
+        MailDTO pDTO = new MailDTO();
+        pDTO.setMailSeq(mailSeq);
+
+        MailDTO rDTO = Optional.ofNullable(mailService.getMailInfo(pDTO))
+                .orElseGet(MailDTO::new);
+
+        model.addAttribute("rDTO", rDTO);
+        log.info("{}.mailInfo End!", this.getClass().getName());
+
+        return "mail/mailInfo";
+    }
+
 }

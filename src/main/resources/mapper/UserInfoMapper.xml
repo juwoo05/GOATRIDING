@@ -68,4 +68,12 @@
              #{userId}, NOW(), #{userId}, NOW())
     </insert>
 
+    <insert id="insertUserRank" parameterType="kopo.poly.dto.UserDTO">
+        INSERT INTO USER_RANK
+        (user_id, user_name, points, distance, carbon_saved, level, achievements, challenges, avatar)
+        VALUES
+            (#{userId}, #{userName}, #{points}, #{distance}, #{carbonSaved}, #{level}, #{achievements}, #{challenges}, #{avatar})
+    </insert>
+
+
 </mapper>

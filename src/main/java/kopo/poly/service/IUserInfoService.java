@@ -23,4 +23,6 @@ public interface IUserInfoService {
 
     // 아이디, 비밀번호 찾기에 활용
     UserInfoDTO searchUserIdOrPasswordProc(UserInfoDTO pDTO) throws Exception;
+
+    void createUser(UserInfoDTO dto) throws Exception;
 }

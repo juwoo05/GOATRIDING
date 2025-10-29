@@ -4,57 +4,84 @@ import kopo.poly.dto.UserDTO;
 import kopo.poly.mapper.IRankingMapper;
 import kopo.poly.service.IRankingService;
 import lombok.RequiredArgsConstructor;
-import org.springframework.scheduling.annotation.Scheduled;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
+import java.math.BigDecimal;
+import java.math.RoundingMode;
 import java.util.List;
 
+@Slf4j
 @Service
 @RequiredArgsConstructor
 public class RankingService implements IRankingService {
 
     private final IRankingMapper rankingMapper;
 
+    // 산식 상수
+    private static final double EMISSION_KG_PER_KM = 0.238; // 120 g/km
+    private static final double POINTS_PER_KG = 100.0;      // 1kg = 100pt
+
     @Override
     public void updateScore(UserDTO pDTO) {
-        // 거리 → 점수 계산
-        double distance = pDTO.getDistance();
-        int point   = (int)(distance * 10);  // 예: 2.3km → 23점
+        rankingMapper.updateScore(pDTO);
+    }
 
-        // 탄소 절약량 계산
-        double carbonSaved = calculateCarbonSaved(distance);
+    @Override
+    public List<UserDTO> getTop5() { return rankingMapper.getTop5(); }
 
-        //DTO에 값 세팅
-        pDTO.setCarbonSaved(carbonSaved);
-        pDTO.setPoints(point);
+    @Override
+    public List<UserDTO> getTop3() { return rankingMapper.getTop3(); }
 
-        // 사용자 등록 or 업데이트
-        UserDTO rDTO = rankingMapper.getUserByName(pDTO.getName());
+    @Override
+    public void resetWeekly() { /* 배치에서 사용 시 구현 */ }
 
-        if (rDTO == null) {
-            rankingMapper.insertUser(pDTO);  // 신규 사용자
-        } else {
-            rankingMapper.updateScore(pDTO); // 기존 사용자 업데이트
+    @Override
+    public List<UserDTO> getAllRanking() { return rankingMapper.getAllRanking(); }
+
+    @Override
+    public UserDTO getUserByName(String name) { return rankingMapper.getUserByName(name); }
+
+    // ⭐ 컨트롤러에서 호출하는 메서드 (시그니처 반드시 동일!)
+    @Override
+    @Transactional
+    public void addRide(String userId, String userName, double distanceMeters) {
+        if (userId == null || userId.isBlank()) {
+            throw new IllegalArgumentException("userId가 필요합니다.");
         }
+        if (distanceMeters <= 0) {
+            throw new IllegalArgumentException("distanceMeters는 양수여야 합니다.");
+        }
+
+        // 유저 없으면 생성
+        UserDTO found = rankingMapper.getUserById(userId);
+        if (found == null) {
+            UserDTO newbie = new UserDTO();
+            newbie.setUserId(userId);
+            newbie.setUserName(userName != null ? userName : userId);
+            rankingMapper.insertUser(newbie);
+        }
+
+        // km/절감/포인트 계산
+        double km = distanceMeters / 1000.0;
+        double savedKg = km * EMISSION_KG_PER_KM;
+        int addPoints = (int) Math.round(savedKg * POINTS_PER_KG);
+
+        // 누적 업데이트
+        UserDTO delta = new UserDTO();
+        delta.setUserId(userId);
+        delta.setDistance(round(km, 3));         // 누적 km
+        delta.setCarbonSaved(round(savedKg, 3)); // 누적 kg
+        delta.setPoints(addPoints);              // 누적 포인트
+
+        rankingMapper.updateScore(delta);
+
+        log.info("[addRide] userId={}, +{}km, +{}kgCO2, +{}pt",
+                userId, km, savedKg, addPoints);
     }
 
-    @Override
-    public List<UserDTO> getTop5() {
-        return rankingMapper.getTop5();
-    }
-
-    @Override
-    @Scheduled(cron = "0 0 0 * * MON", zone = "Asia/Seoul") // 매주 월요일 00:00
-    public void resetWeekly() {
-        rankingMapper.resetWeekly();
-    }
-
-    /**
-     * 거리 (km)를 입력받아 탄소 절약량(kg)을 계산
-     * 반올림은 소수점 둘째 자리까지
-     */
-
-    private double calculateCarbonSaved(double distance) {
-        return Math.round(distance * 0.21 * 100) / 100.0;
+    private static double round(double v, int scale) {
+        return BigDecimal.valueOf(v).setScale(scale, RoundingMode.HALF_UP).doubleValue();
     }
 }

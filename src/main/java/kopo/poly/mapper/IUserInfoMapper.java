@@ -1,5 +1,6 @@
 package kopo.poly.mapper;
 
+import kopo.poly.dto.UserDTO;
 import kopo.poly.dto.UserInfoDTO;
 import org.apache.ibatis.annotations.Mapper;
 
@@ -8,6 +9,8 @@ public interface IUserInfoMapper {
 
     // 회원 가입하기(회원정보 등록하기)
     int insertUserInfo(UserInfoDTO pDTO) throws Exception;
+
+    int insertUserRank(UserDTO pDTO) throws Exception;
 
     // 회원 가입 전 아이디 중복확인(DB조회하기)
     UserInfoDTO getUserIdExists(UserInfoDTO pDTO) throws Exception;
@@ -20,4 +23,7 @@ public interface IUserInfoMapper {
     UserInfoDTO getUserId(UserInfoDTO pDTO) throws Exception;
 
     int updatePassword(UserInfoDTO pDTO) throws Exception;
+
+
 }
+

@@ -32,7 +32,6 @@ public class NoticeController {
 
         log.info("{}.noticeList Start!", this.getClass().getName());
 
-
         List<NoticeDTO> rList = Optional.ofNullable(noticeService.getNoticeList())
                 .orElseGet(ArrayList::new);
 

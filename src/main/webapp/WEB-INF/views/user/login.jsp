@@ -74,7 +74,7 @@
             <i data-lucide="mail" class="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400"></i>
             <input
                     id="userId" name="userId" type="text"
-                    placeholder="your@email.com"
+                    placeholder="아이디를 입력해주세요"
                     class="bg-gray-800 border border-gray-600 text-white pl-10 pr-3 py-2 rounded-md w-full focus:border-[#1ccc94] focus:ring-[#1ccc94] outline-none"
             />
           </div>
@@ -146,10 +146,10 @@
 
       <!-- 데모 계정 -->
       <div class="mt-6 bg-gray-800 bg-opacity-50 rounded-lg p-4">
-        <h3 class="font-jockey text-[#1ccc94] text-sm mb-2">데모 계정</h3>
+        <h3 class="font-jockey text-[#1ccc94] text-sm mb-2">RIDING GOAT</h3>
         <p class="text-gray-300 text-sm">
-          이메일: test@example.com<br />
-          비밀번호: password
+          E-MAIL: RIDING@GOAT.COM<br />
+          ADDRESS: 강서폴리텍
         </p>
       </div>
     </div>

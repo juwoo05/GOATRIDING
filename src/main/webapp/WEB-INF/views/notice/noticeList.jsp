@@ -54,7 +54,7 @@
                 }
             %>
             <div class="divTableCell"
-                 onclick="doDetail('<%=CmmUtil.nvl(dto.getNoticeSeq())%>')"><%=CmmUtil.nvl(dto.getTitle())%>
+                 onclick="doDetail('<%=CmmUtil.nvl(dto.getNoticeSeq())%>')"> <%=CmmUtil.nvl(dto.getTitle())%>
             </div>
             <div class="divTableCell"><%=CmmUtil.nvl(dto.getReadCnt())%>
             </div>

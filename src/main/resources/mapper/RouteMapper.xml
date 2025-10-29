@@ -1,0 +1,48 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kopo.poly.mapper.IRouteMapper">
+
+    <insert id="insertRoute" parameterType="kopo.poly.dto.RouteDTO"
+            useGeneratedKeys="true" keyProperty="routeId" keyColumn="ROUTE_ID">
+        INSERT INTO BIKE_ROUTE (NAME, DIST_KM, DURATION_MIN, FILE_NAME, CREATED_AT)
+        VALUES (#{name}, COALESCE(#{distKm},0), COALESCE(#{durationMin},0), #{fileName}, NOW())
+    </insert>
+
+    <!-- 중복 좌표가 있어도 실패하지 않도록 INSERT IGNORE 적용 -->
+    <insert id="bulkInsertPoints">
+        INSERT IGNORE INTO BIKE_ROUTE_POINT
+        (ROUTE_ID, SEQ, LAT, LNG, ELEV_M, CREATED_AT)
+        VALUES
+        <foreach collection="list" item="p" separator=",">
+            (
+            #{routeId},
+            #{p.seq},
+            #{p.lat},
+            #{p.lng},
+            #{p.elev,jdbcType=DECIMAL},
+            COALESCE(#{p.tm,jdbcType=TIMESTAMP}, NOW())
+            )
+        </foreach>
+    </insert>
+
+    <select id="listRoutes" resultType="kopo.poly.dto.RouteDTO">
+        SELECT ROUTE_ID AS routeId, NAME,
+               DIST_KM AS distKm, DURATION_MIN AS durationMin,
+               FILE_NAME AS fileName, CREATED_AT AS regDt
+        FROM BIKE_ROUTE
+        ORDER BY ROUTE_ID DESC
+    </select>
+
+    <select id="getRoutePoints" parameterType="long" resultType="kopo.poly.dto.RoutePointDTO">
+        SELECT ROUTE_ID AS routeId,
+               SEQ,
+               LAT,
+               LNG,
+               ELEV_M AS elev,
+               CREATED_AT AS tm
+        FROM BIKE_ROUTE_POINT
+        WHERE ROUTE_ID = #{routeId}
+        ORDER BY SEQ
+    </select>
+</mapper>
