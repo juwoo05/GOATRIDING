@@ -1,72 +1,144 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN" "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
 <mapper namespace="kopo.poly.mapper.IRankingMapper">
 
+    <!-- userId 기준 단일 조회 -->
+    <!-- userId 기준 단일 조회 -->
     <select id="getUserById" resultType="kopo.poly.dto.UserDTO">
-        SELECT id AS id, user_id AS userId, user_name AS userName,
-               points AS points, distance AS distance, carbon_saved AS carbonSaved,
-               created_at AS createdAt, level AS level, achievements AS achievements
+        SELECT
+            id            AS id,
+            user_id       AS userId,
+            user_name     AS userName,
+            points        AS points,
+            distance      AS distance,
+            carbon_saved  AS carbonSaved,
+            created_at    AS createdAt,
+            level         AS level,
+            achievements  AS achievements,
+            challenges    AS challenges
         FROM USER_RANK
         WHERE user_id = #{userId}
             LIMIT 1
     </select>
 
+    <!-- userName 기준 단일 조회 -->
     <select id="getUserByName" resultType="kopo.poly.dto.UserDTO">
-        SELECT id AS id, user_id AS userId, user_name AS userName,
-               points AS points, distance AS distance, carbon_saved AS carbonSaved,
-               created_at AS createdAt, level AS level, achievements AS achievements
+        SELECT
+            id, user_id AS userId, user_name AS userName, points, distance,
+            carbon_saved AS carbonSaved, created_at AS createdAt, level,
+            achievements, challenges
         FROM USER_RANK
         WHERE user_name = #{name}
             LIMIT 1
     </select>
 
+    <!-- 신규 사용자 삽입 -->
     <insert id="insertUser" parameterType="kopo.poly.dto.UserDTO">
-        INSERT INTO USER_RANK (USER_ID, USER_NAME, POINTS, DISTANCE, CARBON_SAVED, LEVEL, ACHIEVEMENTS, CREATED_AT)
-        VALUES (#{userId}, #{userName}, 0, 0, 0, 1, 0, NOW())
+        INSERT INTO USER_RANK (
+            USER_ID, USER_NAME, POINTS, DISTANCE, CARBON_SAVED, LEVEL,
+            ACHIEVEMENTS, CHALLENGES, CREATED_AT, AVATAR
+        ) VALUES (
+                     #{userId}, #{userName}, 0, 0, 0, 1, 0, 0, NOW(), '?'
+                 )
     </insert>
 
-    <!-- ⭐ user_id 기준으로 누적 -->
+    <!-- 점수/거리/탄소 누적 + 레벨 재계산 -->
     <update id="updateScore" parameterType="kopo.poly.dto.UserDTO">
         UPDATE USER_RANK
         SET
-            points       = points + #{points},
-            distance     = distance + #{distance},
-            carbon_saved = carbon_saved + #{carbonSaved}
+            points       = IFNULL(points, 0) + #{points},
+            distance     = IFNULL(distance, 0) + #{distance},
+            carbon_saved = IFNULL(carbon_saved, 0) + #{carbonSaved},
+            level        = GREATEST(1, FLOOR( (IFNULL(carbon_saved, 0) + #{carbonSaved}) / 100 ))
         WHERE user_id = #{userId}
     </update>
 
+    <!-- 상위 3 -->
     <select id="getTop3" resultType="kopo.poly.dto.UserDTO">
-        SELECT id, user_id AS userId, user_name AS userName,
-               points, distance, carbon_saved AS carbonSaved,
-               created_at AS createdAt, level, achievements
+        SELECT id, user_id AS userId, user_name AS userName, points, distance,
+               carbon_saved AS carbonSaved, created_at AS createdAt, level,
+               achievements, challenges
         FROM USER_RANK
-        ORDER BY distance DESC, points DESC
+        ORDER BY points DESC, distance DESC
             LIMIT 3
     </select>
 
+    <!-- 상위 5 -->
     <select id="getTop5" resultType="kopo.poly.dto.UserDTO">
-        SELECT id, user_id AS userId, user_name AS userName,
-               points, distance, carbon_saved AS carbonSaved,
-               created_at AS createdAt, level, achievements
+        SELECT id, user_id AS userId, user_name AS userName, points, distance,
+               carbon_saved AS carbonSaved, created_at AS CreatedAt, level,
+               achievements, challenges
         FROM USER_RANK
-        ORDER BY distance DESC, points DESC
+        ORDER BY points DESC, distance DESC
             LIMIT 5
     </select>
 
+    <!-- 전체 랭킹 -->
     <select id="getAllRanking" resultType="kopo.poly.dto.UserDTO">
-        SELECT id, user_id AS userId, user_name AS userName,
-               points, distance, carbon_saved AS carbonSaved,
-               created_at AS createdAt, level, achievements
+        SELECT id, user_id AS userId, user_name AS userName, points, distance,
+               carbon_saved AS carbonSaved, created_at AS createdAt, level,
+               achievements, challenges
         FROM USER_RANK
-        ORDER BY distance DESC, points DESC
+        ORDER BY points DESC, distance DESC
     </select>
 
+    <!-- (옵션) 개별 카운트: 업적(완료 조건 = target 대비 progress 충족) -->
     <select id="getAchievementCount" resultType="int">
-        SELECT COUNT(*) FROM USER_ACHIEVEMENT WHERE USER_ID = #{userId}
+        SELECT COUNT(*)
+        FROM USER_ACHIEVEMENT ua
+        WHERE ua.USER_ID = #{userId}
+          AND (
+            (IFNULL(ua.TARGET_KM,0) > 0 AND IFNULL(ua.PROGRESS_KM,0) >= ua.TARGET_KM)
+                OR (IFNULL(ua.TARGET_KG,0) > 0 AND IFNULL(ua.PROGRESS_KG,0) >= ua.TARGET_KG)
+                OR (IFNULL(ua.TARGET,0)    > 0 AND IFNULL(ua.PROGRESS,0)    >= ua.TARGET)
+            )
     </select>
 
+    <!-- (옵션) 개별 카운트: 주간 도전과제 -->
     <select id="getChallengeCount" resultType="int">
-        SELECT COUNT(*) FROM USER_CHALLENGE WHERE USER_ID = #{userId} AND COMPLETED = TRUE
+        SELECT COUNT(*)
+        FROM USER_CHALLENGE uc
+                 JOIN CHALLENGE c ON c.ID = uc.CHALLENGE_ID
+        WHERE uc.USER_ID = #{userId}
+          AND uc.PERIOD_START = #{periodStart}
+          AND c.PERIOD_TYPE = 'WEEKLY'
+          AND IFNULL(uc.COMPLETED,0) = 1
     </select>
+
+    <!-- ✅ USER_RANK의 achievements, challenges를 한 번에 최신화 -->
+    <update id="updateBadgeCounts" parameterType="map">
+        UPDATE USER_RANK ur
+        SET
+            achievements = (
+                SELECT COUNT(*)
+                FROM USER_ACHIEVEMENT ua
+                WHERE ua.USER_ID = #{userId}
+                  AND (
+                    (IFNULL(ua.TARGET_KM,0) > 0 AND IFNULL(ua.PROGRESS_KM,0) >= ua.TARGET_KM)
+                        OR (IFNULL(ua.TARGET_KG,0) > 0 AND IFNULL(ua.PROGRESS_KG,0) >= ua.TARGET_KG)
+                        OR (IFNULL(ua.TARGET,0)    > 0 AND IFNULL(ua.PROGRESS,0)    >= ua.TARGET)
+                    )
+            ),
+            challenges = (
+                SELECT COUNT(*)
+                FROM USER_CHALLENGE uc
+                         JOIN CHALLENGE c ON c.ID = uc.CHALLENGE_ID
+                WHERE uc.USER_ID = #{userId}
+                  AND uc.PERIOD_START = #{periodStart}
+                  AND c.PERIOD_TYPE = 'WEEKLY'
+                  AND IFNULL(uc.COMPLETED,0) = 1
+            )
+        WHERE ur.USER_ID = #{userId}
+    </update>
+
+    <!-- 주간 리셋 -->
+    <update id="resetWeekly">
+        UPDATE USER_RANK
+        SET points = 0,
+            distance = 0,
+            carbon_saved = 0,
+            level = 1
+    </update>
 
 </mapper>

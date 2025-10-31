@@ -1,0 +1,33 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: my-prj-dep
+  labels:
+    app: my-prj
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: my-prj
+      tier: backend
+  template:
+    metadata:
+      name: my-prj
+      labels:
+        app: my-prj
+        tier: backend
+    spec:
+      containers:
+        - name: my-prj
+          image: docker.io/daehyeonj/restroom:latest
+          imagePullPolicy: IfNotPresent
+          resources:
+            requests:
+              memory: "256Mi"
+              cpu: "50m"
+            limits:
+              memory: "2Gi"
+              cpu: "500m"
+          ports:
+            - containerPort: 11000
+      restartPolicy: Always

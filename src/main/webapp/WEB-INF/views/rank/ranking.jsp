@@ -1,18 +1,12 @@
-<%@ page import="kopo.poly.util.CmmUtil" %>
-<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
 <%@ page contentType="text/html; charset=UTF-8" language="java" isELIgnored="false" %>
-<%
-  String ctx = request.getContextPath();
-%>
-<%
-  String ssUserName = CmmUtil.nvl((String) session.getAttribute("SS_USER_NAME")); // 로그인된 회원 이름
-  String ssUserId = CmmUtil.nvl((String) session.getAttribute("SS_USER_ID")); // 로그인된 회원 아이디
-%>
+<%@ taglib prefix="c" uri="http://java.sun.com/jsp/jstl/core" %>
+
 <!DOCTYPE html>
 <html lang="ko">
 <head>
   <meta charset="UTF-8"/>
-  <title>RIDING GOAT • Ranking</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1"/>
+  <title>RIDING GOAT • Dangerous Map</title>
 
   <!-- Tailwind -->
   <script src="https://cdn.tailwindcss.com"></script>
@@ -24,126 +18,39 @@
   <script src="https://unpkg.com/lucide@latest"></script>
 
   <!-- 배경 블러 -->
+  <!-- Swiper (community와 동일) -->
+  <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.css"/>
+  <script src="https://cdn.jsdelivr.net/npm/swiper@11/swiper-bundle.min.js"></script>
+
   <style>
-    body::before{
-      content:"";
-      position:fixed; inset:0;
-      background:url('<%=ctx%>/images/ranking-thumbnail.png') no-repeat center/cover;
-      filter:blur(8px) brightness(.6);
-      z-index:-1;
+    /* 슬라이드 네비게이션 버튼 색상 */
+    .swiper .swiper-button-prev,
+    .swiper .swiper-button-next {
+      color: #12d2a0; /* var(--brand)와 동일 톤 */
+    }
+    /* 페이지네이션(동그라미) 색상 */
+    .swiper .swiper-pagination-bullet {
+      background: #12d2a0;
+      opacity: .35;
+    }
+    .swiper .swiper-pagination-bullet-active {
+      background: #12d2a0;
+      opacity: 1;
     }
   </style>
-
-  <!-- 공통 헤더 스타일 -->
-  <!-- 공통 헤더 스타일 (community.jsp와 동일) -->
   <style>
-    :root{
-      --brand:#12d2a0;
-      --brand-600:#10b38a;
-      --brand-700:#0f9a78;
-      --ink:#0b1715;
-    }
-    *{ box-sizing:border-box; }
-    html, body{ margin:0; padding:0; }
-    body{ overflow-x:hidden; }
-
-    .site-header{
-      position:fixed; top:0; left:0; right:0;
-      color:#fff; z-index:1000;
-      background:#0b1715;
-      border-bottom:1px solid rgba(255,255,255,.12);
-      backdrop-filter:blur(6px);
-      padding-left:max(0px, env(safe-area-inset-left));
-      padding-right:max(0px, env(safe-area-inset-right));
-    }
-    .site-header .nav{
-      width:100%;
-      max-width:none;
-      margin:0 auto;
-      padding:0 clamp(16px,3vw,32px);
-      min-height:68px;                /* ← 높이 통일 */
-      display:flex; align-items:center; justify-content:space-between;  /* ← flex 레이아웃 */
-    }
-    .logo a{
-      color:var(--brand);
-      text-decoration:none; font-weight:800; letter-spacing:.3px;
-      font-size:28px;                 /* ← 글자 크기 통일 */
-    }
-    .menu{
-      flex:1; display:flex; justify-content:center;
-      gap:clamp(16px,3vw,40px);
-      font-weight:700; font-size:18px; flex-wrap:wrap;
-    }
-    .menu a{ color:#fff; text-decoration:none; opacity:.95; transition:.15s; white-space:nowrap; }
-    .menu a:hover{ opacity:1; }
-    .menu a.active{ color:var(--brand); }
-
-    .auth-buttons{ display:flex; gap:18px; }
-    .auth-link{ color:#fff; text-decoration:none; font-weight:700; opacity:.95; font-size:18px; }
-    .auth-link:hover{ opacity:1; }
-
-    .header-spacer{ height:68px; }    /* ← spacer도 통일 */
-
-    @media (max-width: 640px){
-      .site-header .nav{ min-height:60px; padding:0 16px; }
-      .header-spacer{ height:60px; }
-      .logo a{ font-size:24px; }
-      .menu{ gap:16px; font-size:16px; }
-      .auth-link{ font-size:16px; }
-    }
-  </style>
-
-
-  <!-- Scrollbars: community.jsp와 동일 스킨 -->
-  <style>
-    /* Firefox */
-    * { scrollbar-width: thin; scrollbar-color: #2c3a37 transparent; }
-
-    /* WebKit (Chrome/Edge/Safari) */
-    *::-webkit-scrollbar { width: 10px; height: 10px; }
-    *::-webkit-scrollbar-thumb { background: #2c3a37; border-radius: 10px; }
-    *::-webkit-scrollbar-track { background: transparent; }
+    *{ scrollbar-width: thin; scrollbar-color: #2c3a37 transparent; }
+    *::-webkit-scrollbar{ height:10px; width:10px; }
+    *::-webkit-scrollbar-thumb{ background:#2c3a37; border-radius:10px; }
+    *::-webkit-scrollbar-track{ background:transparent; }
   </style>
 
 </head>
 
-<body class="min-h-screen bg-neutral-900/80 text-white">
-<!-- ✅ 공통 상단 헤더 -->
-<header class="site-header">
-  <div class="nav">
-    <div class="logo"><a href="<%=ctx%>/">RIDING GOAT</a></div>
-    <div class="menu">
-      <a href="<%=ctx%>/map/map">Dangerous Map</a>
-      <a href="<%=ctx%>/rank/ranking">Ranking</a>
-      <a href="<%=ctx%>/community/community">Community</a>
-    </div>
-    <div class="auth-buttons">
-      <% if (ssUserId.equals("")) { %>
-      <!-- 로그인 안됨 -->
-      <a href="/user/login" class="auth-link">Login</a>
-      <a href="/user/userRegForm" class="auth-link">Sign Up</a>
-      <% } else { %>
-      <!-- 로그인됨 -->
-      <a href="/user/myPage" class="auth-link"><%= ssUserName %></a>
-      <a href="/user/logout" class="auth-link">Logout</a>
-      <% } %>
-    </div>
-  </div>
-</header>
-<div class="header-spacer"></div>
+<body class="page-ranking"> <!-- ranking.jsp -->
 
-<!-- 현재 메뉴 활성화 -->
-<script>
-  (function(){
-    var path = location.pathname;
-    document.querySelectorAll('.menu a').forEach(function(a){
-      var href = a.getAttribute('href');
-      if (path === href || (href !== '<%=ctx%>/' && path.startsWith(href))) {
-        a.classList.add('active');
-      }
-    });
-  })();
-</script>
+<!-- ✅ 공통 헤더 include -->
+<%@ include file="../common/header.jsp" %>
 
 <!-- 본문 -->
 <main class="pt-6">
@@ -214,23 +121,24 @@
       rarity: '<c:out value="${a.rarity}" default="common" />',
       unlocked: ${a.unlocked},
       progress: ${a.progress != null ? a.progress : 0},
-      target: ${a.target != null ? a.target : 0}
-    }${!st.last ? ',' : ''}
+      target: ${a.target != null ? a.target : 0},
+      unit: '<c:out value="${a.unit}" default="km" />'
+  }${!st.last ? ',' : ''}
     </c:forEach>
   ];
 
   const challenges = [
     <c:forEach var="c" items="${challenges}" varStatus="st">
     {
-      id: '${c.challengeId}',    // 문자열
-      type: '${c.challengeType}', // 문자열
-      target: ${c.targetValue != null ? c.targetValue : 0},     // 숫자
-      progress: ${c.progressValue != null ? c.progressValue : 0}, // 숫자
-      completed: ${c.completed != null ? c.completed : 0}       // 숫자(0/1)
+      id: <c:out value="${c.challengeId}" default="0"/>,
+      type: '<c:out value="${c.challengeType}" default="Weekly Challenge"/>',
+      target: <c:out value="${c.targetValue}" default="0"/>,
+      // ⬇⬇⬇ 여기만 바꿈
+      progress: <c:out value="${c.progressKm}" default="0"/>,
+      completed: <c:out value="${c.completed}" default="0"/>
     }${!st.last ? ',' : ''}
     </c:forEach>
   ];
-
 
   // ===== 유틸 =====
   const esc = function(s){
@@ -311,7 +219,10 @@
   }
 
   function renderList(){
-    var html = rankingUsers.map(function(user, idx){
+    // 상위 5명만 자르기
+    var topUsers = rankingUsers.slice(0, 5);
+
+    var html = topUsers.map(function(user, idx){
       return '<div class="p-4 rounded-lg transition-all '+(user.isCurrentUser ? 'bg-[var(--brand)]/20 border-2 border-[var(--brand)]' : 'bg-gray-800 hover:bg-gray-700')+'">'
               +   '<div class="flex items-center gap-4">'
               +     '<div class="flex-shrink-0">'+rankIcon(idx+1)+'</div>'
@@ -332,6 +243,7 @@
     }).join('');
     document.getElementById('rankList').innerHTML = html;
   }
+
 
   function renderYourStats(){
     var currentUser = rankingUsers.find(function(u){ return u.isCurrentUser; });
@@ -377,17 +289,31 @@
   }
 
   function renderAchievements(){
+    const fmt = function(v){ return (v % 1 === 0 ? v : Number(v).toFixed(1)); };
     var html = achievements.map(function(a){
-      return '<div class="p-3 rounded-lg border-2 '
-              + (a.unlocked == 1 ? (rarityBorder(a.rarity)+' bg-white/5') : 'border-gray-600 bg-gray-700 opacity-70')
+      var pct = a.target > 0 ? Math.min(100, Math.round((a.progress / a.target) * 100)) : 0;
+      var badge = (a.unlocked == 1)
+              ? '<div class="text-xs bg-green-600 text-white px-2 py-1 rounded">✓</div>'
+              : '<div class="text-xs bg-gray-600 text-white px-2 py-1 rounded">' + pct + '%</div>';
+
+      return ''
+              + '<div class="p-3 rounded-lg border-2 '
+              +   (a.unlocked == 1 ? (rarityBorder(a.rarity)+' bg-white/5') : 'border-gray-600 bg-gray-700')
               + '">'
               +   '<div class="flex items-center gap-3">'
-              +     '<div class="text-2xl">'+esc(a.icon)+'</div>'
               +     '<div class="flex-1">'
-              +       '<div class="text-sm text-white">'+esc(a.title)+'</div>'
-              +       '<div class="text-xs text-gray-300">'+esc(a.description)+'</div>'
+              +       '<div class="text-sm text-white">' + esc(a.title) + '</div>'
+              +       '<div class="text-xs text-gray-300">' + esc(a.description) + '</div>'
+              +       '<div class="mt-2">'
+              +         '<div class="w-full bg-gray-600/60 rounded-full h-2">'
+              +           '<div class="h-2 rounded-full bg-[var(--brand)]" style="width:' + pct + '%;"></div>'
+              +         '</div>'
+              +         '<div class="mt-1 text-[11px] text-gray-300">'
+              +           fmt(a.progress) + ' / ' + fmt(a.target) + ' ' + esc(a.unit || 'km')
+              +         '</div>'
+              +       '</div>'
               +     '</div>'
-              +     (a.unlocked == 1 ? '<div class="text-xs bg-green-600 text-white px-2 py-1 rounded">✓</div>' : '')
+              +     badge
               +   '</div>'
               + '</div>';
     }).join('');
@@ -396,24 +322,37 @@
 
 
   function renderChallenges(){
-    const html = challenges.map(c => `
-    <div class="flex items-center gap-3">
-      <i data-lucide="target" class="w-5 h-5 text-orange-400"></i>
-      <div class="flex-1">
-        <div class="text-sm text-white">\${c.type}</div>
-        <div class="text-xs text-gray-300">Progress: \${c.progress}/\${c.target}</div>
-        <div class="w-full bg-gray-700 rounded-full h-2 mt-1">
-          <div class="bg-orange-400 h-2 rounded-full"
-               style="width:\${c.target > 0 ? ((c.progress/c.target)*100).toFixed(0) : 0}%"></div>
-        </div>
-      </div>
-      \${c.completed == 1
-          ? '<div class="text-xs bg-green-600 text-white px-2 py-1 rounded">✓</div>'
-          : ''}
-    </div>
-  `).join('');
-    document.querySelector('.weekly-challenges').innerHTML = html;
+    var html = challenges.map(function(c){
+      var p   = Number(c.progress || 0);   // ← progressKm가 여기로 들어옴
+      var t   = Number(c.target   || 0);
+      var pct = t > 0 ? Math.min(100, Math.round((p / t) * 100)) : 0;
+      var fmt = function(v){ return Number.isFinite(v) ? (v % 1 === 0 ? v : v.toFixed(1)) : '0'; };
+
+      var badge = Number(c.completed) === 1
+              ? '<div class="text-xs bg-green-600 text-white px-2 py-1 rounded">✓</div>'
+              : '';
+
+      return ''
+              + '<div class="flex items-center gap-3">'
+              +   '<i data-lucide="target" class="w-5 h-5 text-orange-400"></i>'
+              +   '<div class="flex-1">'
+              +     '<div class="text-sm text-white">' + String(c.type || '') + '</div>'
+              +     '<div class="text-xs text-gray-300">Progress: ' + fmt(p) + ' / ' + fmt(t) + '</div>'
+              +     '<div class="w-full bg-gray-700 rounded-full h-2 mt-1">'
+              +       '<div class="bg-orange-400 h-2 rounded-full" style="width:' + pct + '%"></div>'
+              +     '</div>'
+              +   '</div>'
+              +   badge
+              + '</div>';
+    }).join('');
+
+    var box = document.querySelector('.weekly-challenges');
+    if (box){
+      box.innerHTML = html;
+      if (window.lucide && lucide.createIcons) lucide.createIcons();
+    }
   }
+
 
 
   function renderAll(){
@@ -430,7 +369,6 @@
   renderAll();
 
   console.log("DEBUG challenges:", challenges);
-
 </script>
 </body>
 </html>

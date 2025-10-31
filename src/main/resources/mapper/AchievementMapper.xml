@@ -2,50 +2,158 @@
 <!DOCTYPE mapper
         PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
         "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
-
 <mapper namespace="kopo.poly.mapper.IAchievementMapper">
 
-    <!-- 특정 유저의 업적 조회 -->
     <select id="selectUserAchievements" resultType="kopo.poly.dto.UserAchievementView">
         SELECT
-            a.ID,
-            a.TITLE,
-            a.DESCRIPTION,
-            a.ICON,
-            a.RARITY,
-            ua.PROGRESS AS progress,
-            ua.TARGET AS target,
+            a.ID          AS id,
+            a.TITLE       AS title,
+            a.DESCRIPTION AS description,
+            a.ICON        AS icon,
+            a.RARITY      AS rarity,
+            a.UNIT        AS unit,
             CASE
-                WHEN ua.PROGRESS IS NOT NULL
-                    AND ua.TARGET IS NOT NULL
-                    AND ua.PROGRESS >= ua.TARGET
-                    THEN 1
+                WHEN a.UNIT='km' THEN IFNULL(ua.PROGRESS_KM, 0)
+                WHEN a.UNIT='kg' THEN IFNULL(ua.PROGRESS_KG, 0)
+                ELSE 0
+                END AS progress,
+            CASE
+                WHEN a.UNIT='km' THEN IFNULL(ua.TARGET_KM, a.GOAL_VALUE)
+                WHEN a.UNIT='kg' THEN IFNULL(ua.TARGET_KG, a.GOAL_VALUE)
+                ELSE a.GOAL_VALUE
+                END AS target,
+            CASE
+                WHEN a.UNIT='km' AND IFNULL(ua.PROGRESS_KM,0) >= IFNULL(ua.TARGET_KM, a.GOAL_VALUE) THEN 1
+                WHEN a.UNIT='kg' AND IFNULL(ua.PROGRESS_KG,0) >= IFNULL(ua.TARGET_KG, a.GOAL_VALUE) THEN 1
                 ELSE 0
                 END AS unlocked,
             ua.ACHIEVED_AT AS unlockedAt
         FROM ACHIEVEMENT a
                  LEFT JOIN USER_ACHIEVEMENT ua
-                           ON a.ID = ua.ACHIEVEMENT_ID
-                               AND ua.USER_ID = #{userId}
+                           ON ua.ACHIEVEMENT_ID = a.ID
+                               AND ua.USER_ID        = #{userId}
+        ORDER BY a.ID ASC
     </select>
 
-    <!-- 모든 업적 조회 (회원가입 초기화용) -->
+    <!-- 마스터 전체(회원가입 초기화용) -->
     <select id="getAllAchievements" resultType="kopo.poly.dto.UserAchievementView">
         SELECT
-            ID,
-            TITLE,
-            DESCRIPTION,
-            ICON,
-            RARITY,
-            TARGET
-        FROM ACHIEVEMENT
-        ORDER BY ID ASC
+            a.ID          AS id,
+            a.TITLE       AS title,
+            a.DESCRIPTION AS description,
+            a.ICON        AS icon,
+            a.RARITY      AS rarity,
+            a.GOAL_VALUE  AS target,
+            a.UNIT        AS unit
+        FROM ACHIEVEMENT a
+        ORDER BY a.ID ASC
     </select>
 
-    <!-- 유저 업적 insert (회원가입 시 초기화) -->
+    <!-- UA 초기 insert: 단위별 target 복제 (legacy progress/target 필드 유지) -->
     <insert id="insertUserAchievement">
-        INSERT INTO USER_ACHIEVEMENT (user_id, achievement_id, progress, target, achieved_at)
-        VALUES (#{userId}, #{achievementId}, #{progress}, #{target}, NULL)
+        INSERT INTO USER_ACHIEVEMENT
+        (user_id, achievement_id, progress, target, progress_km, progress_kg, target_km, target_kg, achieved_at)
+        SELECT
+            #{userId},
+            a.ID,
+            0, 0,
+            0, 0,
+            CASE WHEN a.UNIT='km' THEN a.GOAL_VALUE ELSE 0 END,
+            CASE WHEN a.UNIT='kg' THEN a.GOAL_VALUE ELSE 0 END,
+            NULL
+        FROM ACHIEVEMENT a
+        WHERE a.ID = #{achievementId}
+            ON DUPLICATE KEY UPDATE
+                                 target_km = CASE WHEN a.UNIT='km' THEN a.GOAL_VALUE ELSE target_km END,
+                                 target_kg = CASE WHEN a.UNIT='kg' THEN a.GOAL_VALUE ELSE target_kg END
+    </insert>
+
+    <!-- 거리형 업적: 특정 ID에 km 누적 (COMPLETED 제거, achieved_at만 관리) -->
+    <insert id="upsertDistanceById" parameterType="map">
+        INSERT INTO USER_ACHIEVEMENT
+            (user_id, achievement_id, progress_km, target_km, achieved_at)
+        SELECT
+            #{userId},
+            #{achievementId},
+            #{deltaKm},
+            a.GOAL_VALUE,
+            CASE WHEN #{deltaKm} >= a.GOAL_VALUE THEN NOW() ELSE NULL END
+        FROM ACHIEVEMENT a
+        WHERE a.ID = #{achievementId}
+            ON DUPLICATE KEY UPDATE
+                                 progress_km = LEAST(target_km, progress_km + VALUES(progress_km)),
+                                 achieved_at = CASE
+                                 WHEN achieved_at IS NULL AND progress_km + VALUES(progress_km) >= target_km
+                                 THEN NOW()
+                                 ELSE achieved_at
+        END
+    </insert>
+
+    <!-- 거리형 업적: 코드(타이틀)로 km 누적 -->
+    <insert id="upsertDistanceByCode">
+        INSERT INTO USER_ACHIEVEMENT
+            (user_id, achievement_id, progress_km, target_km, achieved_at)
+        SELECT
+            #{userId}, a.ID,
+            CASE WHEN a.UNIT='km' THEN #{deltaKm} ELSE 0 END,
+            CASE WHEN a.UNIT='km' THEN a.GOAL_VALUE ELSE 0 END,
+            CASE WHEN a.UNIT='km' AND #{deltaKm} >= a.GOAL_VALUE THEN NOW() ELSE NULL END
+        FROM ACHIEVEMENT a
+        WHERE a.TITLE = #{code}
+            ON DUPLICATE KEY UPDATE
+                                 progress_km = CASE
+                                 WHEN a.UNIT='km' THEN LEAST(target_km, progress_km + #{deltaKm})
+                                 ELSE progress_km
+        END,
+            achieved_at = CASE
+                WHEN a.UNIT='km' AND achieved_at IS NULL AND progress_km + #{deltaKm} >= target_km
+        THEN NOW()
+        ELSE achieved_at
+        END
+    </insert>
+
+    <!-- 탄소형 업적: ID로 kg 누적 -->
+    <insert id="upsertCarbonById">
+        INSERT INTO USER_ACHIEVEMENT
+            (user_id, achievement_id, progress_kg, target_kg, achieved_at)
+        SELECT
+            #{userId}, a.ID,
+            CASE WHEN a.UNIT='kg' THEN #{deltaKg} ELSE 0 END,
+            CASE WHEN a.UNIT='kg' THEN a.GOAL_VALUE ELSE 0 END,
+            CASE WHEN a.UNIT='kg' AND #{deltaKg} >= a.GOAL_VALUE THEN NOW() ELSE NULL END
+        FROM ACHIEVEMENT a
+        WHERE a.ID = #{achievementId}
+            ON DUPLICATE KEY UPDATE
+                                 progress_kg = CASE
+                                 WHEN a.UNIT='kg' THEN LEAST(target_kg, progress_kg + #{deltaKg})
+                                 ELSE progress_kg
+        END,
+            achieved_at = CASE
+                WHEN a.UNIT='kg' AND achieved_at IS NULL AND progress_kg + #{deltaKg} >= target_kg
+        THEN NOW()
+        ELSE achieved_at
+        END
+    </insert>
+
+    <!-- 탄소형 업적: 코드(타이틀)로 kg 누적  ★파라미터 이름 code로 통일 -->
+    <insert id="upsertCarbonByCode" parameterType="map">
+        INSERT INTO USER_ACHIEVEMENT
+            (user_id, achievement_id, progress_kg, target_kg, achieved_at)
+        SELECT
+            #{userId},
+            a.ID,
+            #{deltaKg},
+            a.GOAL_VALUE,
+            CASE WHEN #{deltaKg} >= a.GOAL_VALUE THEN NOW() ELSE NULL END
+        FROM ACHIEVEMENT a
+        WHERE a.TITLE = #{code}
+            ON DUPLICATE KEY UPDATE
+                                 progress_kg = LEAST(target_kg, progress_kg + VALUES(progress_kg)),
+                                 achieved_at = CASE
+                                 WHEN achieved_at IS NULL AND progress_kg + VALUES(progress_kg) >= target_kg
+                                 THEN NOW()
+                                 ELSE achieved_at
+        END
     </insert>
 
 </mapper>

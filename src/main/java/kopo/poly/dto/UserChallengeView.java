@@ -7,6 +7,6 @@ public class UserChallengeView {
     private Long challengeId;
     private String challengeType;
     private double targetValue;
-    private double progressValue;
+    private double progressKm;
     private int completed;
 }

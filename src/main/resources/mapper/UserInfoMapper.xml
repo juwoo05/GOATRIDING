@@ -16,13 +16,19 @@
         <result column="REG_DT"    property="regDt"/>
         <result column="CHG_ID"    property="chgId"/>
         <result column="CHG_DT"    property="chgDt"/>
+        <!-- 필요 시 existsYn 같은 보조 필드는 DTO에 추가해서 매핑하세요 -->
     </resultMap>
+
+    <!-- ✅ FK 가드용: USER_INFO에 userId 존재 여부 (1/0) -->
+    <select id="exists" resultType="int">
+        SELECT COUNT(*) FROM USER_INFO WHERE USER_ID = #{userId}
+    </select>
 
     <!-- 비밀번호 재설정 -->
     <update id="updatePassword" parameterType="kopo.poly.dto.UserInfoDTO">
         UPDATE USER_INFO
         SET PASSWORD = #{password}
-        WHERE EMAIL    = #{email}
+        WHERE EMAIL   = #{email}
     </update>
 
     <!-- 이메일로 사용자 조회(선택적 userId 조건) -->
@@ -52,7 +58,7 @@
         WHERE USER_ID = #{userId}
     </select>
 
-    <!-- 이메일 중복 확인 (이메일은 컨트롤러에서 AES로 암호화되어 들어옴) -->
+    <!-- 이메일 중복 확인 (컨트롤러에서 EMAIL은 AES 등으로 이미 암호화되어 들어옴) -->
     <select id="getEmailExists" parameterType="kopo.poly.dto.UserInfoDTO" resultType="kopo.poly.dto.UserInfoDTO">
         SELECT CASE WHEN COUNT(*) > 0 THEN 'Y' ELSE 'N' END AS existsYn
         FROM USER_INFO
@@ -68,12 +74,21 @@
              #{userId}, NOW(), #{userId}, NOW())
     </insert>
 
+    <!-- USER_RANK 초기행 생성 (널 방지 기본값 처리) -->
     <insert id="insertUserRank" parameterType="kopo.poly.dto.UserDTO">
         INSERT INTO USER_RANK
-        (user_id, user_name, points, distance, carbon_saved, level, achievements, challenges, avatar)
+        (USER_ID, USER_NAME, POINTS, DISTANCE, CARBON_SAVED, LEVEL, ACHIEVEMENTS, CHALLENGES, AVATAR, CREATED_AT)
         VALUES
-            (#{userId}, #{userName}, #{points}, #{distance}, #{carbonSaved}, #{level}, #{achievements}, #{challenges}, #{avatar})
+            (#{userId},
+             #{userName},
+             IFNULL(#{points}, 0),
+             IFNULL(#{distance}, 0),
+             IFNULL(#{carbonSaved}, 0),
+             IFNULL(#{level}, 1),
+             IFNULL(#{achievements}, 0),
+             IFNULL(#{challenges}, 0),
+             IFNULL(#{avatar}, '?'),
+             NOW())
     </insert>
-
 
 </mapper>

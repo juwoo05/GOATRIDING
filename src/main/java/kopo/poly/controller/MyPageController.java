@@ -72,12 +72,11 @@ public class MyPageController {
             String contentType = CmmUtil.nvl(request.getParameter("contentType"));
             if (contentType.isEmpty()) contentType = "application/octet-stream";
 
-            // keyPrefix 예: user-profile/<userId>  (버킷 내부 경로는 서비스에서 조합)
             var pre = ncosPresignService.createUploadUrl("user-profile/" + userId, contentType);
 
             res.put("success", true);
-            res.put("uploadUrl", pre.uploadUrl()); // PUT presign URL
-            res.put("publicUrl", pre.publicUrl()); // 업로드 후 접근할 공개 URL
+            res.put("uploadUrl", pre.uploadUrl());
+            res.put("publicUrl", pre.publicUrl());
         } catch (Exception e) {
             log.error("[presign] error", e);
             res.put("success", false);

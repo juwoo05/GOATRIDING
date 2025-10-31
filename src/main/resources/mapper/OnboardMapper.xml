@@ -1,0 +1,69 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE mapper PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+<mapper namespace="kopo.poly.mapper.IOnboardMapper">
+
+    <!-- 1) USER_RANK: 없으면 생성 -->
+    <insert id="insertUserRankIfAbsent" parameterType="map">
+        INSERT INTO USER_RANK (USER_ID, USER_NAME, POINTS, DISTANCE, CARBON_SAVED,
+                               LEVEL, ACHIEVEMENTS, CHALLENGES, CREATED_AT, AVATAR)
+        SELECT #{userId}, #{userName}, 0, 0, 0, 1, 0, 0, NOW(), '?'
+        FROM DUAL
+        WHERE NOT EXISTS (
+            SELECT 1 FROM USER_RANK WHERE USER_ID = #{userId}
+        )
+    </insert>
+
+    <!-- 2) USER_ACHIEVEMENT: 모든 업적 시드 (UNIT에 맞춰 타겟 채움) -->
+    <insert id="initAllAchievements" parameterType="map">
+        INSERT INTO USER_ACHIEVEMENT
+        (USER_ID, ACHIEVEMENT_ID,
+         PROGRESS, PROGRESS_KM, PROGRESS_KG,
+         TARGET,   TARGET_KM,   TARGET_KG,
+         ACHIEVED_AT)
+        SELECT
+            #{userId}                  AS USER_ID,
+            a.ID                       AS ACHIEVEMENT_ID,
+            0                          AS PROGRESS,
+            0                          AS PROGRESS_KM,
+            0                          AS PROGRESS_KG,
+            CASE WHEN a.UNIT NOT IN ('km','kg') THEN a.GOAL_VALUE ELSE 0 END AS TARGET,
+            CASE WHEN a.UNIT = 'km' THEN a.GOAL_VALUE ELSE 0 END           AS TARGET_KM,
+            CASE WHEN a.UNIT = 'kg' THEN a.GOAL_VALUE ELSE 0 END           AS TARGET_KG,
+            NULL                       AS ACHIEVED_AT
+        FROM ACHIEVEMENT a
+        WHERE NOT EXISTS (
+            SELECT 1 FROM USER_ACHIEVEMENT ua
+            WHERE ua.USER_ID = #{userId}
+              AND ua.ACHIEVEMENT_ID = a.ID
+        )
+    </insert>
+
+    <!-- 3) USER_CHALLENGE: 이번 주 주간 챌린지 시드 (UNIT에 맞춰 타겟 채움) -->
+    <insert id="initWeeklyChallenges" parameterType="map">
+        INSERT INTO USER_CHALLENGE
+        (USER_ID, CHALLENGE_ID,
+         PROGRESS_VALUE, PROGRESS_KM, PROGRESS_KG,
+         TARGET_KM, TARGET_KG,
+         PERIOD_START, COMPLETED)
+        SELECT
+            #{userId}           AS USER_ID,
+            c.ID                AS CHALLENGE_ID,
+            0                   AS PROGRESS_VALUE,
+            CASE WHEN c.UNIT='km' THEN 0 ELSE 0 END AS PROGRESS_KM,
+            CASE WHEN c.UNIT='kg' THEN 0 ELSE 0 END AS PROGRESS_KG,
+            CASE WHEN c.UNIT='km' THEN c.GOAL_VALUE ELSE 0 END AS TARGET_KM,
+            CASE WHEN c.UNIT='kg' THEN c.GOAL_VALUE ELSE 0 END AS TARGET_KG,
+            #{periodStart}      AS PERIOD_START,
+            0                   AS COMPLETED
+        FROM CHALLENGE c
+        WHERE c.PERIOD_TYPE = 'WEEKLY'
+          AND NOT EXISTS (
+            SELECT 1 FROM USER_CHALLENGE uc
+            WHERE uc.USER_ID = #{userId}
+              AND uc.CHALLENGE_ID = c.ID
+              AND uc.PERIOD_START = #{periodStart}
+        )
+    </insert>
+
+</mapper>

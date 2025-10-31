@@ -1,0 +1,33 @@
+<?xml version="1.0" encoding="UTF-8" ?>
+<!DOCTYPE mapper
+        PUBLIC "-//mybatis.org//DTD Mapper 3.0//EN"
+        "http://mybatis.org/dtd/mybatis-3-mapper.dtd">
+
+<mapper namespace="kopo.poly.mapper.IRankBadgeMapper">
+
+    <!-- 완료된 업적 수 -->
+    <select id="countAchievements" resultType="int">
+        SELECT COUNT(*)
+        FROM USER_ACHIEVEMENT
+        WHERE USER_ID = #{userId}
+          AND COMPLETED = 1
+    </select>
+
+    <!-- 이번 주 완료된 주간 도전과제 수 -->
+    <select id="countWeeklyChallenges" resultType="int">
+        SELECT COUNT(*)
+        FROM USER_CHALLENGE
+        WHERE USER_ID = #{userId}
+          AND PERIOD_START = #{periodStart}
+          AND COMPLETED = 1
+    </select>
+
+    <!-- USER_RANK.ACHIEVEMENTS / CHALLENGES 동시 갱신 -->
+    <update id="updateUserRankBadges">
+        UPDATE USER_RANK
+        SET ACHIEVEMENTS = #{achievements},
+            CHALLENGES   = #{challenges}
+        WHERE USER_ID = #{userId}
+    </update>
+
+</mapper>

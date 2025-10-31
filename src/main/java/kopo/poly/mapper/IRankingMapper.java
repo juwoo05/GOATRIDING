@@ -4,21 +4,20 @@ import kopo.poly.dto.UserDTO;
 import org.apache.ibatis.annotations.Mapper;
 import org.apache.ibatis.annotations.Param;
 
+import java.sql.Date;
 import java.util.List;
 
 @Mapper
 public interface IRankingMapper {
 
-    // 단일 조회 (user_id 기준) – 새로 추가
+    // 단일 조회
     UserDTO getUserById(@Param("userId") String userId);
-
-    // 단일 조회 (user_name 기준) – 기존 유지
     UserDTO getUserByName(@Param("name") String name);
 
-    // 신규 사용자 삽입
+    // 신규 사용자 생성
     void insertUser(UserDTO pDTO);
 
-    // ⭐ 누적 업데이트 (points / distance / carbon_saved) — WHERE user_id=?
+    // 점수/거리/탄소 누적
     void updateScore(UserDTO pDTO);
 
     // 랭킹 조회
@@ -26,10 +25,15 @@ public interface IRankingMapper {
     List<UserDTO> getTop3();
     List<UserDTO> getAllRanking();
 
-    // 주간 리셋(쓰고 있으면 유지)
+    // 주간 리셋
     void resetWeekly();
 
-    // 집계 (필요 시 사용) — userId가 숫자 PK면 Long, 문자열이면 String으로 맞춰도 됨
-    int getAchievementCount(@Param("userId") Long userId);
-    int getChallengeCount(@Param("userId") Long userId);
+    // ✅ USER_RANK의 achievements/challenges 집계 반영
+    int updateBadgeCounts(@Param("userId") String userId,
+                          @Param("periodStart") Date periodStart);
+
+    // (옵션) 개별 카운트가 필요하면 사용
+    Integer getAchievementCount(@Param("userId") String userId);
+    Integer getChallengeCount(@Param("userId") String userId,
+                              @Param("periodStart") Date periodStart);
 }

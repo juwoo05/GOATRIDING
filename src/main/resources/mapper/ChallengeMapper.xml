@@ -5,22 +5,81 @@
 
 <mapper namespace="kopo.poly.mapper.IChallengeMapper">
 
-    <!-- 특정 유저의 도전 과제 진행 상황 조회 -->
-    <select id="getUserChallenges" resultType="kopo.poly.dto.UserChallengeView">
+    <!-- 주간 챌린지 조회 -->
+    <select id="selectUserWeeklyChallenges" resultType="kopo.poly.dto.UserChallengeView">
         SELECT
-            c.ID AS challengeId,
-            c.TITLE AS challengeType,
-            c.GOAL_VALUE AS targetValue,
-            COALESCE(uc.PROGRESS_VALUE, 0) AS progressValue,  -- ✅ NULL 방지
-            CASE
-                WHEN uc.COMPLETED = 1 THEN 1
-                ELSE 0
-                END AS completed
+        c.ID                     AS challengeId,
+        c.TITLE                  AS challengeType,
+        c.GOAL_VALUE             AS targetValue,
+        IFNULL(uc.PROGRESS_KM,0) AS progressKm,   <!-- 여기! -->
+        IFNULL(uc.COMPLETED,0)   AS completed
         FROM CHALLENGE c
-                 LEFT JOIN USER_CHALLENGE uc
-                           ON c.ID = uc.CHALLENGE_ID
-                               AND uc.USER_ID = #{userId}
+        LEFT JOIN USER_CHALLENGE uc
+        ON uc.CHALLENGE_ID = c.ID
+        AND uc.USER_ID      = #{userId}
+        AND uc.PERIOD_START = #{periodStart}
         WHERE c.PERIOD_TYPE = 'WEEKLY'
+        AND c.UNIT        = 'km'
+        ORDER BY c.ID
     </select>
+    <!-- 이번 주 초기화: USER_INFO에 유저가 존재할 때만 -->
+    <insert id="initUserWeeklyChallenges">
+        INSERT INTO USER_CHALLENGE
+        (USER_ID, CHALLENGE_ID, PERIOD_START, PROGRESS_KM, TARGET_KM, COMPLETED)
+        SELECT
+            #{userId}, c.ID, #{periodStart}, 0, c.GOAL_VALUE, 0
+        FROM CHALLENGE c
+        WHERE c.PERIOD_TYPE = 'WEEKLY'
+          AND c.UNIT        = 'km'
+          AND EXISTS (SELECT 1 FROM USER_INFO ui WHERE ui.USER_ID = #{userId})
+            ON DUPLICATE KEY UPDATE
+                                 TARGET_KM = VALUES(TARGET_KM)
+    </insert>
+
+    <!-- 주간+km 전체에 증분 적용 -->
+    <insert id="upsertWeeklyDistanceAll" parameterType="map">
+        INSERT INTO USER_CHALLENGE
+        (USER_ID, CHALLENGE_ID, PERIOD_START, PROGRESS_KM, TARGET_KM, COMPLETED)
+        SELECT
+            #{userId},
+            c.ID,
+            #{periodStart},
+            #{deltaKm},
+            c.GOAL_VALUE,
+            CASE WHEN #{deltaKm} >= c.GOAL_VALUE THEN 1 ELSE 0 END
+        FROM CHALLENGE c
+        WHERE c.PERIOD_TYPE = 'WEEKLY'
+          AND c.UNIT        = 'km'
+          AND EXISTS (SELECT 1 FROM USER_INFO ui WHERE ui.USER_ID = #{userId})
+            ON DUPLICATE KEY UPDATE
+                                 PROGRESS_KM = LEAST(TARGET_KM, PROGRESS_KM + VALUES(PROGRESS_KM)),
+                                 COMPLETED   = CASE
+                                 WHEN PROGRESS_KM + VALUES(PROGRESS_KM) >= TARGET_KM THEN 1
+                                 ELSE COMPLETED
+        END
+    </insert>
+
+    <!-- 주간+kg 전체에 증분 적용 -->
+    <insert id="upsertWeeklyCarbonAll" parameterType="map">
+        INSERT INTO USER_CHALLENGE
+        (USER_ID, CHALLENGE_ID, PERIOD_START, PROGRESS_KG, TARGET_KG, COMPLETED)
+        SELECT
+            #{userId},
+            c.ID,
+            #{periodStart},
+            #{deltaKg},
+            c.GOAL_VALUE,
+            CASE WHEN #{deltaKg} >= c.GOAL_VALUE THEN 1 ELSE 0 END
+        FROM CHALLENGE c
+        WHERE c.PERIOD_TYPE = 'WEEKLY'
+          AND c.UNIT        = 'kg'
+          AND EXISTS (SELECT 1 FROM USER_INFO ui WHERE ui.USER_ID = #{userId})
+            ON DUPLICATE KEY UPDATE
+                                 PROGRESS_KG = LEAST(TARGET_KG, PROGRESS_KG + VALUES(PROGRESS_KG)),
+                                 COMPLETED   = CASE
+                                 WHEN PROGRESS_KG + VALUES(PROGRESS_KG) >= TARGET_KG THEN 1
+                                 ELSE COMPLETED
+        END
+    </insert>
 
 </mapper>
