@@ -16,6 +16,9 @@ public class TestService implements ITestService {
 
     @Override
     public SpamDTO test(SpamDTO pDTO) {
-        return spamService.predict(pDTO);
+        log.info("TestService.test Start!");
+        SpamDTO rDTO = spamService.predict(pDTO);
+        log.info("TestService.test End!");
+        return rDTO;
     }
 }

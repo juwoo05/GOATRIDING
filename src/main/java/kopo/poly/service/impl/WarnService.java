@@ -36,7 +36,7 @@ public class WarnService implements IWarnService {
         log.info("WarnService.getDangerous START");
 
         String searchYearCd = "2021";
-        String siDo = "11"; // 서울
+        String siDo = "11"; // 서울SS
         String type = "json";
         String numOfRows = "1000";
         String pageNo = "1";
